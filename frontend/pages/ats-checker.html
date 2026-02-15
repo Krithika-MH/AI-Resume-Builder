@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Score Checker - AI Resume Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .score-meter {
+            height: 200px;
+            position: relative;
+        }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 15px solid #e5e7eb;
+            position: relative;
+            margin: 0 auto;
+        }
+        .score-excellent { border-color: #10b981; }
+        .score-good { border-color: #3b82f6; }
+        .score-fair { border-color: #f59e0b; }
+        .score-poor { border-color: #ef4444; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-indigo-600">AI Resume Builder</h1>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 font-medium">Home</a>
+                    <a href="/pages/resume-builder.html" class="text-gray-700 hover:text-indigo-600 px-3 py-2 font-medium">Resume Builder</a>
+                    <a href="/pages/ats-checker.html" class="text-indigo-600 px-3 py-2 font-medium border-b-2 border-indigo-600">ATS Checker</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="text-center mb-8">
+            <h2 class="text-4xl font-bold text-gray-900 mb-4">ATS Score Checker</h2>
+            <p class="text-xl text-gray-600">Upload your resume to check its ATS compatibility score</p>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Upload Section -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h3 class="text-2xl font-bold mb-6 text-gray-900">Upload Resume</h3>
+                
+                <form id="atsCheckForm" class="space-y-6">
+                    <!-- Resume Upload -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload Resume *</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-500 transition duration-300">
+                            <input type="file" id="resumeFile" required accept=".pdf,.docx,.doc" class="hidden" onchange="updateFileName()">
+                            <label for="resumeFile" class="cursor-pointer">
+                                <svg class="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <p class="text-gray-600 font-medium" id="fileLabel">Click to upload or drag and drop</p>
+                                <p class="text-sm text-gray-500 mt-1">PDF or DOCX (Max 10MB)</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Target Role -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Target Job Role *</label>
+                        <input type="text" id="targetRole" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., Software Engineer, Data Analyst">
+                    </div>
+
+                    <!-- Job Description -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Job Description (Optional)</label>
+                        <textarea id="jobDescription" rows="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Paste the job description here for better keyword matching..."></textarea>
+                        <p class="text-xs text-gray-500 mt-1">Including a job description improves accuracy of skill matching</p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="checkBtn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 shadow-lg">
+                        <span id="btnText">Check ATS Score</span>
+                        <span id="btnLoader" class="hidden">
+                            <svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Results Section -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h3 class="text-2xl font-bold mb-6 text-gray-900">ATS Score Results</h3>
+                
+                <div id="resultsContainer" class="hidden">
+                    <!-- Score Display -->
+                    <div class="text-center mb-8">
+                        <div class="score-meter mb-4">
+                            <div id="scoreCircle" class="score-circle flex items-center justify-center">
+                                <div class="text-center">
+                                    <div id="scoreValue" class="text-5xl font-bold text-gray-900">--</div>
+                                    <div class="text-sm text-gray-600">out of 100</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="scoreLevel" class="text-xl font-semibold text-gray-700 mb-2">--</div>
+                        <div id="scoreMessage" class="text-sm text-gray-600">--</div>
+                    </div>
+
+                    <!-- Detailed Breakdown -->
+                    <div class="space-y-4 mb-6">
+                        <h4 class="font-semibold text-lg text-gray-900">Score Breakdown</h4>
+                        
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Skill Match</span>
+                                <span id="skillScore" class="font-semibold">--</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="skillBar" class="bg-indigo-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Keyword Relevance</span>
+                                <span id="keywordScore" class="font-semibold">--</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="keywordBar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Role Alignment</span>
+                                <span id="roleScore" class="font-semibold">--</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="roleBar" class="bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Formatting</span>
+                                <span id="formatScore" class="font-semibold">--</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="formatBar" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>Section Completeness</span>
+                                <span id="sectionScore" class="font-semibold">--</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="sectionBar" class="bg-yellow-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Missing Keywords -->
+                    <div id="missingKeywordsSection" class="mb-6 hidden">
+                        <h4 class="font-semibold text-lg text-gray-900 mb-3">Missing Keywords</h4>
+                        <div id="missingKeywords" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <!-- Suggestions -->
+                    <div>
+                        <h4 class="font-semibold text-lg text-gray-900 mb-3">Suggestions for Improvement</h4>
+                        <ul id="suggestionsList" class="space-y-2 text-sm text-gray-700"></ul>
+                    </div>
+                </div>
+
+                <!-- Placeholder -->
+                <div id="placeholder" class="text-center text-gray-400 py-20">
+                    <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <p class="text-lg">Your ATS score will appear here</p>
+                    <p class="text-sm mt-2">Upload your resume and click "Check ATS Score"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/ats-checker.js"></script>
+</body>
+</html>

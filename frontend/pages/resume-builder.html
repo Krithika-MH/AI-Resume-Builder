@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Builder - AI Resume Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .editor-content { min-height: 600px; }
+        .resume-preview { border: 1px solid #e5e7eb; padding: 2rem; background: white; }
+        .section-header { font-size: 1.2rem; font-weight: bold; color: #1f2937; margin: 1.5rem 0 0.5rem 0; border-bottom: 2px solid #4f46e5; padding-bottom: 0.25rem; }
+        .editable { outline: none; padding: 0.5rem; border-radius: 0.25rem; }
+        .editable:focus { background: #f3f4f6; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-indigo-600">AI Resume Builder</h1>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 font-medium">Home</a>
+                    <a href="/pages/resume-builder.html" class="text-indigo-600 px-3 py-2 font-medium border-b-2 border-indigo-600">Resume Builder</a>
+                    <a href="/pages/ats-checker.html" class="text-gray-700 hover:text-indigo-600 px-3 py-2 font-medium">ATS Checker</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Left Panel - Input Form -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-3xl font-bold mb-6 text-gray-900">Build Your Resume</h2>
+                
+                <form id="resumeForm" class="space-y-6">
+                    <!-- Personal Information -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                        <input type="text" id="fullName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="John Doe">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
+                            <input type="tel" id="phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="+1 234 567 8900">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                            <input type="email" id="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="john@example.com">
+                        </div>
+                    </div>
+
+                    <!-- Target Role -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Target Job Role *</label>
+                        <input type="text" id="targetRole" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Software Engineer, Data Analyst, etc.">
+                    </div>
+
+                    <!-- Job Description -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Job Description (Optional)</label>
+                        <textarea id="jobDescription" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Paste the job description here for better alignment..."></textarea>
+                    </div>
+
+                    <!-- Existing Resume Upload -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload Existing Resume (Optional)</label>
+                        <input type="file" id="existingResume" accept=".pdf,.docx,.doc" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <p class="text-xs text-gray-500 mt-1">Supported formats: PDF, DOCX (Max 10MB)</p>
+                    </div>
+
+                    <!-- Template Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Resume Template</label>
+                        <select id="template" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="professional">Professional</option>
+                            <option value="modern">Modern</option>
+                            <option value="classic">Classic</option>
+                        </select>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="generateBtn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 shadow-lg">
+                        <span id="btnText">Generate Resume</span>
+                        <span id="btnLoader" class="hidden">
+                            <svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Panel - Resume Preview & Editor -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Resume Preview</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="downloadPDF()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition duration-300">
+                            Download PDF
+                        </button>
+                        <button onclick="downloadDOCX()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition duration-300">
+                            Download DOCX
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ATS Score Display -->
+                <div id="atsScoreDisplay" class="hidden mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+                    <h3 class="font-semibold text-lg mb-2">ATS Score</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-4xl font-bold text-indigo-600" id="overallScore">--</div>
+                        <div class="flex-1">
+                            <div id="scoreBreakdown" class="text-sm text-gray-700"></div>
+                        </div>
+                    </div>
+                    <div id="scoreSuggestions" class="mt-3 text-sm"></div>
+                </div>
+
+                <!-- Editable Resume Content -->
+                <div id="resumePreview" class="resume-preview editor-content">
+                    <div class="text-center text-gray-400 py-20">
+                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-lg">Your resume will appear here</p>
+                        <p class="text-sm mt-2">Fill in the form and click "Generate Resume"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/resume-builder.js"></script>
+</body>
+</html>
