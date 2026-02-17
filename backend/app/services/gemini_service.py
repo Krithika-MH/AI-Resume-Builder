@@ -1,264 +1,401 @@
 """
 Gemini AI Service for Resume Generation
-Handles all AI-powered content generation using Google's Gemini API
+Uses REAL user-provided data – AI only polishes wording, never invents facts.
 """
 from google import genai
+from google.genai import types
 from backend.app.core.config import settings
-from backend.app.models.schemas import ResumeContent
-from typing import List
-from dotenv import load_dotenv
-import os
+from backend.app.models.schemas import (
+    ResumeContent, ContactInfo, ExperienceItem,
+    EducationItem, ProjectItem
+)
 import json
 import re
 
+
 class GeminiService:
-    """Service for interacting with Gemini AI"""
-    
     def __init__(self):
-        """Initialize Gemini API with API key from settings"""
-        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        print("Listing available models...")
-        for m in self.client.models.list():
-            print(m.name)
+        self.client   = genai.Client(api_key=settings.GEMINI_API_KEY)
+        self.model_id = 'gemini-2.5-flash'
+        print(f"✅ Gemini Service initialized with model: {self.model_id}")
 
-
-    
+    # ------------------------------------------------------------------ #
+    #  PUBLIC: main entry point                                            #
+    # ------------------------------------------------------------------ #
     def generate_resume_content(
-        self, 
-        full_name: str, 
-        phone: str, 
-        email: str, 
-        target_role: str,
-        job_description: str = None,
-        existing_resume_text: str = None
+        self,
+        full_name:            str,
+        phone:                str,
+        email:                str,
+        target_role:          str,
+        job_description:      str  = None,
+        existing_resume_text: str  = None,
+        user_data:            dict = None,   # ← structured form data
     ) -> ResumeContent:
-        """
-        Generate ATS-optimized resume content using Gemini AI
-        
-        Args:
-            full_name: Candidate's full name
-            phone: Contact phone number
-            email: Contact email
-            target_role: Target job position
-            job_description: Optional job description for alignment
-            existing_resume_text: Optional existing resume content to improve
-            
-        Returns:
-            ResumeContent object with structured resume data
-        """
-        
-        # Construct comprehensive prompt for Gemini
-        prompt = self._build_resume_prompt(
-            full_name, phone, email, target_role, 
-            job_description, existing_resume_text
+
+        print(f"\n🤖 Generating resume for: {full_name}  |  Role: {target_role}")
+
+        # ── Build prompt ──────────────────────────────────────────────
+        prompt = self._build_prompt(
+            full_name, phone, email, target_role,
+            job_description, existing_resume_text, user_data
         )
-        
+
         try:
-            # Generate content using Gemini
-            response = self.client.models.generate_content(
-                            model="gemini-flash-latest",
-                            contents=prompt
-                        )
-            
-            # Parse the JSON response
-            resume_data = self._parse_gemini_response(response.text)
-            
-            # Create ResumeContent object
-            resume_content = ResumeContent(
-                full_name=full_name,
-                contact={
-                    "phone": phone,
-                    "email": email,
-                    "linkedin": resume_data.get("linkedin", ""),
-                    "github": resume_data.get("github", ""),
-                    "portfolio": resume_data.get("portfolio", "")
-                },
-                summary=resume_data.get("summary", ""),
-                skills=resume_data.get("skills", []),
-                experience=resume_data.get("experience", []),
-                education=resume_data.get("education", []),
-                projects=resume_data.get("projects", []),
-                certifications=resume_data.get("certifications", []),
-                achievements=resume_data.get("achievements", [])
+            config = types.GenerateContentConfig(
+                temperature=0.4,          # lower temp → less hallucination
+                top_p=0.95,
+                max_output_tokens=8192,
+                response_mime_type="application/json",
             )
-            
-            return resume_content
-            
+
+            print("📡 Calling Gemini API…")
+            response = self.client.models.generate_content(
+                model=self.model_id,
+                contents=prompt,
+                config=config,
+            )
+
+            raw = response.text
+            print(f"✅ Received {len(raw)} chars")
+
+            data = self._parse_json(raw)
+            if not data:
+                raise ValueError("Empty / unparseable response")
+
+            return self._build_resume_content(
+                full_name, phone, email, target_role,
+                data, user_data
+            )
+
         except Exception as e:
-            print(f"Error generating resume content: {str(e)}")
-            # Return minimal content if generation fails
-            return self._create_fallback_content(full_name, phone, email, target_role)
-    
-    def _build_resume_prompt(
-        self, 
-        full_name: str, 
-        phone: str, 
-        email: str, 
-        target_role: str,
-        job_description: str = None,
-        existing_resume_text: str = None
+            print(f"❌ Gemini error: {e}")
+            import traceback; traceback.print_exc()
+            # Fall back to whatever the user typed, unpolished
+            return self._build_from_raw_user_data(
+                full_name, phone, email, target_role, user_data
+            )
+
+    # ------------------------------------------------------------------ #
+    #  Prompt builder                                                      #
+    # ------------------------------------------------------------------ #
+    def _build_prompt(
+        self,
+        full_name, phone, email, target_role,
+        job_description, existing_resume_text, user_data,
     ) -> str:
-        """Build comprehensive prompt for Gemini AI"""
-        
-        prompt = f"""You are an expert ATS-friendly resume writer and career coach. Generate a professional, ATS-optimized resume for the following candidate.
 
-**Candidate Information:**
-- Name: {full_name}
-- Phone: {phone}
-- Email: {email}
-- Target Role: {target_role}
+        # ── Summarise what the user actually gave us ──────────────────
+        ud = user_data or {}
 
-"""
-        
+        lines = [
+            f"You are a professional resume writer. Your task is ONLY to polish and",
+            f"professionally reword the information below — do NOT invent or add any",
+            f"facts, companies, schools, dates, or projects that are not provided.",
+            f"",
+            f"=== CANDIDATE DETAILS ===",
+            f"Name        : {full_name}",
+            f"Phone       : {phone}",
+            f"Email       : {email}",
+            f"Target Role : {target_role}",
+        ]
+
+        if ud.get('linkedin'):  lines.append(f"LinkedIn    : {ud['linkedin']}")
+        if ud.get('github'):    lines.append(f"GitHub      : {ud['github']}")
+
+        # Summary hint
+        if ud.get('summary'):
+            lines += ["", "=== PROFESSIONAL SUMMARY (user-written – improve wording) ===",
+                      ud['summary']]
+        else:
+            lines += ["", "=== PROFESSIONAL SUMMARY ===",
+                      f"Write a 3-sentence professional summary for a {target_role} based ONLY on",
+                      "the skills, experience, and education listed below. Do NOT mention",
+                      "companies or achievements that aren't listed."]
+
+        # Skills
+        tech = ud.get('tech_skills', [])
+        soft = ud.get('soft_skills', [])
+        all_skills = tech + soft
+        if all_skills:
+            lines += ["", "=== SKILLS (use exactly these, do not add more) ===",
+                      ", ".join(all_skills)]
+        else:
+            lines += ["", "=== SKILLS ===",
+                      "No skills provided. Generate 8 common skills for this role."]
+
+        # Experience
+        exp_list = ud.get('experience', [])
+        if exp_list:
+            lines += ["", "=== WORK EXPERIENCE (polish bullets, keep all facts exact) ==="]
+            for i, e in enumerate(exp_list, 1):
+                lines.append(f"\n-- Position {i} --")
+                lines.append(f"Title    : {e.get('title','')}")
+                lines.append(f"Company  : {e.get('company','')}")
+                lines.append(f"Duration : {e.get('duration','')}")
+                lines.append(f"Location : {e.get('location','')}")
+                resps = e.get('responsibilities', [])
+                if resps:
+                    lines.append("Bullets (improve wording, keep meaning):")
+                    for r in resps:
+                        lines.append(f"  - {r}")
+                else:
+                    lines.append("No bullets given. Write 3 generic bullets for this role/company.")
+        else:
+            lines += ["", "=== WORK EXPERIENCE ===",
+                      "No experience provided. Leave experience list empty ([])."]
+
+        # Education
+        edu_list = ud.get('education', [])
+        if edu_list:
+            lines += ["", "=== EDUCATION ==="]
+            for i, e in enumerate(edu_list, 1):
+                lines.append(f"\n-- Entry {i} --")
+                lines.append(f"Degree      : {e.get('degree','')}")
+                lines.append(f"Institution : {e.get('institution','')}")
+                lines.append(f"Year        : {e.get('year','')}")
+                lines.append(f"GPA         : {e.get('gpa','')}")
+        else:
+            lines += ["", "=== EDUCATION ===",
+                      "No education provided. Leave education list empty ([])."]
+
+        # Projects
+        proj_list = ud.get('projects', [])
+        if proj_list:
+            lines += ["", "=== PROJECTS ==="]
+            for i, p in enumerate(proj_list, 1):
+                lines.append(f"\n-- Project {i} --")
+                lines.append(f"Name         : {p.get('name','')}")
+                lines.append(f"Technologies : {p.get('technologies','')}")
+                lines.append(f"Description  : {p.get('description','')}")
+                lines.append(f"Impact       : {p.get('impact','')}")
+        else:
+            lines += ["", "=== PROJECTS ===",
+                      "No projects provided. Leave projects list empty ([])."]
+
+        # Certifications
+        certs = ud.get('certifications', [])
+        if certs:
+            lines += ["", "=== CERTIFICATIONS (use exactly as given) ==="] + certs
+        else:
+            lines += ["", "=== CERTIFICATIONS ===", "None provided. Leave empty ([])."]
+
+        # Achievements
+        achs = ud.get('achievements', [])
+        if achs:
+            lines += ["", "=== ACHIEVEMENTS (use exactly as given) ==="] + achs
+        else:
+            lines += ["", "=== ACHIEVEMENTS ===", "None provided. Leave empty ([])."]
+
+        # Job description
         if job_description:
-            prompt += f"""**Job Description:**
-{job_description}
+            lines += ["", "=== JOB DESCRIPTION (align keywords only – don't invent) ===",
+                      job_description[:800]]
 
-"""
-        
+        # Existing resume
         if existing_resume_text:
-            prompt += f"""**Existing Resume Content:**
-{existing_resume_text}
+            lines += ["", "=== EXISTING RESUME TEXT (extract real facts from here) ===",
+                      existing_resume_text[:1500]]
 
-"""
-        
-        prompt += """**Instructions:**
-1. Generate a complete, ATS-optimized resume with the following sections:
-   - Professional Summary (3-4 impactful sentences)
-   - Skills (list 10-15 relevant technical and soft skills)
-   - Work Experience (3-5 positions with 4-6 bullet points each using action verbs)
-   - Education (degrees with institutions and years)
-   - Projects (2-4 relevant projects with descriptions)
-   - Certifications (relevant certifications)
-   - Achievements (notable accomplishments)
+        # Output format
+        lines += [
+            "",
+            "=== OUTPUT FORMAT ===",
+            "Return ONLY valid JSON matching this schema exactly:",
+            '{',
+            '  "summary": "string",',
+            '  "skills": ["string", ...],',
+            '  "experience": [{"title":"","company":"","duration":"","location":"","responsibilities":["..."]}],',
+            '  "education":  [{"degree":"","institution":"","year":"","gpa":""}],',
+            '  "projects":   [{"name":"","description":"","technologies":"","impact":""}],',
+            '  "certifications": ["string"],',
+            '  "achievements":   ["string"],',
+            '  "linkedin": "",',
+            '  "github":   ""',
+            '}',
+            "",
+            "RULES:",
+            "1. Do NOT invent companies, dates, schools, or projects not listed above.",
+            "2. DO improve grammar, add action verbs, and add metrics ONLY when clearly implied.",
+            "3. Keep every fact exactly as given.",
+            "4. If a section is empty above, output an empty list [] for it.",
+        ]
 
-2. Use strong action verbs: Developed, Implemented, Led, Architected, Optimized, Designed, etc.
+        return "\n".join(lines)
 
-3. Include quantifiable metrics where possible (percentages, numbers, impact)
-
-4. Align content with the target role and job description (if provided)
-
-5. Extract and incorporate relevant keywords from the job description
-
-6. Use clean, standard formatting suitable for ATS systems
-
-7. Avoid graphics, tables, special characters, or complex formatting
-
-**Output Format:**
-Return ONLY a valid JSON object with this exact structure:
-{
-  "summary": "Professional summary text here",
-  "skills": ["Skill 1", "Skill 2", "Skill 3", ...],
-  "experience": [
-    {
-      "title": "Job Title",
-      "company": "Company Name",
-      "duration": "Jan 2020 - Present",
-      "location": "City, State",
-      "responsibilities": [
-        "Action verb + achievement with metrics",
-        "Another accomplishment",
-        ...
-      ]
-    }
-  ],
-  "education": [
-    {
-      "degree": "Degree Name",
-      "institution": "University Name",
-      "year": "2020",
-      "gpa": "3.8/4.0"
-    }
-  ],
-  "projects": [
-    {
-      "name": "Project Name",
-      "description": "Brief description",
-      "technologies": "Tech stack used",
-      "impact": "Measurable impact or outcome"
-    }
-  ],
-  "certifications": ["Certification 1", "Certification 2", ...],
-  "achievements": ["Achievement 1", "Achievement 2", ...],
-  "linkedin": "LinkedIn URL (optional)",
-  "github": "GitHub URL (optional)",
-  "portfolio": "Portfolio URL (optional)"
-}
-
-Generate professional, impactful content that will pass ATS screening and impress recruiters."""
-        
-        return prompt
-    
-    def _parse_gemini_response(self, response_text: str) -> dict:
-        """Parse Gemini's JSON response, handling markdown code blocks"""
+    # ------------------------------------------------------------------ #
+    #  Parse Gemini response                                               #
+    # ------------------------------------------------------------------ #
+    def _parse_json(self, raw: str) -> dict:
         try:
-            # Remove markdown code blocks if present
-            cleaned_text = re.sub(r'```json\s*', '', response_text)
-            cleaned_text = re.sub(r'```\s*$', '', cleaned_text)
-            cleaned_text = cleaned_text.strip()
-            
-            # Parse JSON
-            data = json.loads(cleaned_text)
-            return data
-            
-        except json.JSONDecodeError as e:
-            print(f"JSON parsing error: {str(e)}")
-            print(f"Response text: {response_text[:500]}")
+            cleaned = raw.strip()
+            cleaned = re.sub(r'^```json\s*', '', cleaned)
+            cleaned = re.sub(r'^```\s*', '', cleaned)
+            cleaned = re.sub(r'```\s*$', '', cleaned).strip()
+            data = json.loads(cleaned)
+            if 'summary' in data or 'skills' in data:
+                print("✅ JSON parsed OK")
+                return data
             return {}
-    
-    def _create_fallback_content(
-        self, 
-        full_name: str, 
-        phone: str, 
-        email: str, 
-        target_role: str
+        except Exception as e:
+            print(f"❌ JSON parse error: {e}")
+            print("First 400 chars:", raw[:400])
+            return {}
+
+    # ------------------------------------------------------------------ #
+    #  Build ResumeContent from Gemini's polished JSON                    #
+    # ------------------------------------------------------------------ #
+    def _build_resume_content(
+        self,
+        full_name, phone, email, target_role,
+        data: dict,
+        user_data: dict,
     ) -> ResumeContent:
-        """Create minimal fallback content if AI generation fails"""
+        ud = user_data or {}
+
+        contact = ContactInfo(
+            phone=phone,
+            email=email,
+            linkedin=ud.get('linkedin') or data.get('linkedin', ''),
+            github=ud.get('github')   or data.get('github',   ''),
+            portfolio=ud.get('portfolio', ''),
+        )
+
+        # Experience
+        experience = []
+        for e in data.get('experience', []):
+            try:
+                experience.append(ExperienceItem(
+                    title=e.get('title', ''),
+                    company=e.get('company', ''),
+                    duration=e.get('duration', ''),
+                    location=e.get('location', ''),
+                    responsibilities=e.get('responsibilities', []),
+                ))
+            except Exception as ex:
+                print(f"⚠️ Bad exp entry: {ex}")
+
+        # Education
+        education = []
+        for e in data.get('education', []):
+            try:
+                education.append(EducationItem(
+                    degree=e.get('degree', ''),
+                    institution=e.get('institution', ''),
+                    year=str(e.get('year', '')),
+                    gpa=e.get('gpa') or None,
+                ))
+            except Exception as ex:
+                print(f"⚠️ Bad edu entry: {ex}")
+
+        # Projects
+        projects = []
+        for p in data.get('projects', []):
+            try:
+                projects.append(ProjectItem(
+                    name=p.get('name', ''),
+                    description=p.get('description', ''),
+                    technologies=p.get('technologies', ''),
+                    impact=p.get('impact', ''),
+                ))
+            except Exception as ex:
+                print(f"⚠️ Bad proj entry: {ex}")
+
+        rc = ResumeContent(
+            full_name=full_name,
+            contact=contact,
+            summary=data.get('summary', ''),
+            skills=data.get('skills', []),
+            experience=experience,
+            education=education,
+            projects=projects,
+            certifications=data.get('certifications', []),
+            achievements=data.get('achievements', []),
+        )
+
+        print(f"  Summary chars : {len(rc.summary)}")
+        print(f"  Skills        : {len(rc.skills)}")
+        print(f"  Experience    : {len(rc.experience)}")
+        print(f"  Education     : {len(rc.education)}")
+        print(f"  Projects      : {len(rc.projects)}")
+        return rc
+
+    # ------------------------------------------------------------------ #
+    #  Fallback: use raw user data without AI polishing                   #
+    # ------------------------------------------------------------------ #
+    def _build_from_raw_user_data(
+        self,
+        full_name, phone, email, target_role,
+        user_data: dict,
+    ) -> ResumeContent:
+        print("⚠️  Using raw user data as fallback (no AI polish)")
+        ud = user_data or {}
+
+        contact = ContactInfo(
+            phone=phone, email=email,
+            linkedin=ud.get('linkedin', ''),
+            github=ud.get('github', ''),
+            portfolio=ud.get('portfolio', ''),
+        )
+
+        tech = ud.get('tech_skills', [])
+        soft = ud.get('soft_skills', [])
+        skills = tech + soft or [
+            'Communication', 'Problem Solving', 'Team Collaboration',
+            'Time Management', 'Critical Thinking',
+        ]
+
+        summary = ud.get('summary') or (
+            f"Motivated professional seeking {target_role} role. "
+            "Skilled in " + ", ".join(skills[:4]) + ". "
+            "Committed to delivering high-quality results."
+        )
+
+        experience = []
+        for e in ud.get('experience', []):
+            if not e.get('title') and not e.get('company'):
+                continue
+            experience.append(ExperienceItem(
+                title=e.get('title', target_role),
+                company=e.get('company', ''),
+                duration=e.get('duration', ''),
+                location=e.get('location', ''),
+                responsibilities=e.get('responsibilities', [
+                    'Contributed to team projects and deliverables',
+                    'Collaborated with stakeholders to meet requirements',
+                ]),
+            ))
+
+        education = []
+        for e in ud.get('education', []):
+            if not e.get('degree') and not e.get('institution'):
+                continue
+            education.append(EducationItem(
+                degree=e.get('degree', ''),
+                institution=e.get('institution', ''),
+                year=str(e.get('year', '')),
+                gpa=e.get('gpa') or None,
+            ))
+
+        projects = []
+        for p in ud.get('projects', []):
+            if not p.get('name'):
+                continue
+            projects.append(ProjectItem(
+                name=p.get('name', ''),
+                description=p.get('description', ''),
+                technologies=p.get('technologies', ''),
+                impact=p.get('impact', ''),
+            ))
+
         return ResumeContent(
             full_name=full_name,
-            contact={
-                "phone": phone,
-                "email": email,
-                "linkedin": "",
-                "github": "",
-                "portfolio": ""
-            },
-            summary=f"Motivated professional seeking {target_role} position. Skilled in multiple technologies with proven track record of delivering results.",
-            skills=["Communication", "Problem Solving", "Team Collaboration", "Technical Skills", "Project Management"],
-            experience=[],
-            education=[],
-            projects=[],
-            certifications=[],
-            achievements=[]
+            contact=contact,
+            summary=summary,
+            skills=skills,
+            experience=experience,
+            education=education,
+            projects=projects,
+            certifications=ud.get('certifications', []),
+            achievements=ud.get('achievements', []),
         )
-    
-    def enhance_bullet_points(self, bullet_points: List[str]) -> List[str]:
-        """Enhance bullet points with action verbs and impact"""
-        if not bullet_points:
-            return []
-        
-        prompt = f"""You are a resume writing expert. Improve these bullet points to be more impactful and ATS-friendly:
-
-{chr(10).join(f'- {point}' for point in bullet_points)}
-
-Requirements:
-1. Start each with a strong action verb
-2. Include quantifiable metrics where possible
-3. Keep them concise (1-2 lines each)
-4. Focus on achievements and impact
-5. Use industry-standard terminology
-
-Return ONLY a JSON array of improved bullet points:
-["Improved point 1", "Improved point 2", ...]"""
-        
-        try:
-            response = self.client.models.generate_content(
-                            model="gemini-flash-latest",
-                            contents=prompt
-                        )
-            cleaned = re.sub(r'```json\s*', '', response.text)
-            cleaned = re.sub(r'```\s*$', '', cleaned).strip()
-            enhanced = json.loads(cleaned)
-            return enhanced if isinstance(enhanced, list) else bullet_points
-        except:
-            return bullet_points

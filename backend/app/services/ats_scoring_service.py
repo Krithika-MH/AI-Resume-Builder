@@ -7,6 +7,7 @@ from typing import List, Dict, Set
 import re
 from collections import Counter
 
+
 class ATSScoringService:
     """Service for calculating ATS compatibility scores"""
     
@@ -164,7 +165,7 @@ class ATSScoringService:
         # Reward consistent formatting (check experience entries)
         if resume_content.experience:
             has_consistent_format = all(
-                exp.get('title') and exp.get('company') and exp.get('duration')
+                exp.title and exp.company and exp.duration
                 for exp in resume_content.experience
             )
             if not has_consistent_format:
@@ -239,17 +240,17 @@ class ATSScoringService:
         text_parts.extend(resume_content.skills)
         
         for exp in resume_content.experience:
-            text_parts.append(exp.get('title', ''))
-            text_parts.append(exp.get('company', ''))
-            text_parts.extend(exp.get('responsibilities', []))
+            text_parts.append(exp.title if exp.title else '')
+            text_parts.append(exp.company if exp.company else '')
+            text_parts.extend(exp.responsibilities if exp.responsibilities else [])
         
         for edu in resume_content.education:
-            text_parts.append(edu.get('degree', ''))
-            text_parts.append(edu.get('institution', ''))
+            text_parts.append(edu.degree if edu.degree else '')
+            text_parts.append(edu.institution if edu.institution else '')
         
         for proj in resume_content.projects:
-            text_parts.append(proj.get('name', ''))
-            text_parts.append(proj.get('description', ''))
+            text_parts.append(proj.name if proj.name else '')
+            text_parts.append(proj.description if proj.description else '')
         
         text_parts.extend(resume_content.certifications)
         text_parts.extend(resume_content.achievements)

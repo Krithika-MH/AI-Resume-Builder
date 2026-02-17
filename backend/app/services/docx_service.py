@@ -8,6 +8,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from backend.app.models.schemas import ResumeContent
 from io import BytesIO
 
+
 class DOCXGenerationService:
     """Service for generating DOCX resumes"""
     
@@ -59,12 +60,12 @@ class DOCXGenerationService:
         
         # Contact Information (Centered)
         contact_parts = []
-        if content.contact.get('phone'):
-            contact_parts.append(content.contact['phone'])
-        if content.contact.get('email'):
-            contact_parts.append(content.contact['email'])
-        if content.contact.get('linkedin'):
-            contact_parts.append(content.contact['linkedin'])
+        if content.contact.phone:
+            contact_parts.append(content.contact.phone)
+        if content.contact.email:
+            contact_parts.append(content.contact.email)
+        if content.contact.linkedin:
+            contact_parts.append(content.contact.linkedin)
         
         if contact_parts:
             contact_para = doc.add_paragraph()
@@ -98,7 +99,7 @@ class DOCXGenerationService:
             for exp in content.experience:
                 # Job Title (Bold)
                 title_para = doc.add_paragraph()
-                title_run = title_para.add_run(exp.get('title', 'Position'))
+                title_run = title_para.add_run(exp.title)
                 title_run.font.size = Pt(11)
                 title_run.font.bold = True
                 title_run.font.color.rgb = RGBColor(26, 26, 26)
@@ -106,9 +107,9 @@ class DOCXGenerationService:
                 
                 # Company, Duration, Location (Italic)
                 company_para = doc.add_paragraph()
-                company_text = f"{exp.get('company', 'Company')} | {exp.get('duration', '')}"
-                if exp.get('location'):
-                    company_text += f" | {exp['location']}"
+                company_text = f"{exp.company} | {exp.duration}"
+                if exp.location:
+                    company_text += f" | {exp.location}"
                 company_run = company_para.add_run(company_text)
                 company_run.font.size = Pt(10)
                 company_run.font.italic = True
@@ -116,7 +117,7 @@ class DOCXGenerationService:
                 company_para.paragraph_format.space_after = Pt(4)
                 
                 # Responsibilities (Bulleted)
-                for resp in exp.get('responsibilities', []):
+                for resp in exp.responsibilities:
                     bullet_para = doc.add_paragraph(resp, style='List Bullet')
                     bullet_para.paragraph_format.left_indent = Inches(0.25)
                     bullet_para.paragraph_format.space_after = Pt(3)
@@ -132,7 +133,7 @@ class DOCXGenerationService:
             for edu in content.education:
                 # Degree (Bold)
                 degree_para = doc.add_paragraph()
-                degree_run = degree_para.add_run(edu.get('degree', 'Degree'))
+                degree_run = degree_para.add_run(edu.degree)
                 degree_run.font.size = Pt(11)
                 degree_run.font.bold = True
                 degree_run.font.color.rgb = RGBColor(26, 26, 26)
@@ -140,9 +141,9 @@ class DOCXGenerationService:
                 
                 # Institution and Year
                 inst_para = doc.add_paragraph()
-                inst_text = f"{edu.get('institution', 'University')} | {edu.get('year', '')}"
-                if edu.get('gpa'):
-                    inst_text += f" | GPA: {edu['gpa']}"
+                inst_text = f"{edu.institution} | {edu.year}"
+                if edu.gpa:
+                    inst_text += f" | GPA: {edu.gpa}"
                 inst_run = inst_para.add_run(inst_text)
                 inst_run.font.size = Pt(10)
                 inst_run.font.italic = True
@@ -156,29 +157,29 @@ class DOCXGenerationService:
             for proj in content.projects:
                 # Project Name (Bold)
                 proj_para = doc.add_paragraph()
-                proj_run = proj_para.add_run(proj.get('name', 'Project'))
+                proj_run = proj_para.add_run(proj.name)
                 proj_run.font.size = Pt(11)
                 proj_run.font.bold = True
                 proj_run.font.color.rgb = RGBColor(26, 26, 26)
                 proj_para.paragraph_format.space_after = Pt(2)
                 
                 # Technologies
-                if proj.get('technologies'):
+                if proj.technologies:
                     tech_para = doc.add_paragraph()
-                    tech_run = tech_para.add_run(f"Technologies: {proj['technologies']}")
+                    tech_run = tech_para.add_run(f"Technologies: {proj.technologies}")
                     tech_run.font.size = Pt(10)
                     tech_run.font.italic = True
                     tech_run.font.color.rgb = RGBColor(85, 85, 85)
                     tech_para.paragraph_format.space_after = Pt(4)
                 
                 # Description and Impact (Bulleted)
-                if proj.get('description'):
-                    desc_para = doc.add_paragraph(proj['description'], style='List Bullet')
+                if proj.description:
+                    desc_para = doc.add_paragraph(proj.description, style='List Bullet')
                     desc_para.paragraph_format.left_indent = Inches(0.25)
                     self._format_body_text(desc_para, size=9)
                 
-                if proj.get('impact'):
-                    impact_para = doc.add_paragraph(proj['impact'], style='List Bullet')
+                if proj.impact:
+                    impact_para = doc.add_paragraph(proj.impact, style='List Bullet')
                     impact_para.paragraph_format.left_indent = Inches(0.25)
                     self._format_body_text(impact_para, size=9)
                 

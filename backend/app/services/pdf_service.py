@@ -12,6 +12,7 @@ from backend.app.models.schemas import ResumeContent
 from io import BytesIO
 from typing import List
 
+
 class PDFGenerationService:
     """Service for generating PDF resumes"""
     
@@ -143,12 +144,12 @@ class PDFGenerationService:
         
         # Contact Information
         contact_parts = []
-        if content.contact.get('phone'):
-            contact_parts.append(content.contact['phone'])
-        if content.contact.get('email'):
-            contact_parts.append(content.contact['email'])
-        if content.contact.get('linkedin'):
-            contact_parts.append(content.contact['linkedin'])
+        if content.contact.phone:
+            contact_parts.append(content.contact.phone)
+        if content.contact.email:
+            contact_parts.append(content.contact.email)
+        if content.contact.linkedin:
+            contact_parts.append(content.contact.linkedin)
         
         contact_text = " | ".join(contact_parts)
         story.append(Paragraph(contact_text, self.styles['ContactInfo']))
@@ -172,17 +173,17 @@ class PDFGenerationService:
             story.append(Paragraph("PROFESSIONAL EXPERIENCE", self.styles['SectionHeader']))
             for exp in content.experience:
                 # Job title and duration
-                title_text = f"<b>{exp.get('title', 'Position')}</b>"
+                title_text = f"<b>{exp.title}</b>"
                 story.append(Paragraph(title_text, self.styles['JobTitle']))
                 
                 # Company and location
-                company_text = f"{exp.get('company', 'Company')} | {exp.get('duration', '')}"
-                if exp.get('location'):
-                    company_text += f" | {exp['location']}"
+                company_text = f"{exp.company} | {exp.duration}"
+                if exp.location:
+                    company_text += f" | {exp.location}"
                 story.append(Paragraph(company_text, self.styles['CompanyName']))
                 
                 # Responsibilities
-                for resp in exp.get('responsibilities', []):
+                for resp in exp.responsibilities:
                     bullet_text = f"• {resp}"
                     story.append(Paragraph(bullet_text, self.styles['BulletPoint']))
                 
@@ -192,12 +193,12 @@ class PDFGenerationService:
         if content.education:
             story.append(Paragraph("EDUCATION", self.styles['SectionHeader']))
             for edu in content.education:
-                degree_text = f"<b>{edu.get('degree', 'Degree')}</b>"
+                degree_text = f"<b>{edu.degree}</b>"
                 story.append(Paragraph(degree_text, self.styles['JobTitle']))
                 
-                institution_text = f"{edu.get('institution', 'University')} | {edu.get('year', '')}"
-                if edu.get('gpa'):
-                    institution_text += f" | GPA: {edu['gpa']}"
+                institution_text = f"{edu.institution} | {edu.year}"
+                if edu.gpa:
+                    institution_text += f" | GPA: {edu.gpa}"
                 story.append(Paragraph(institution_text, self.styles['CompanyName']))
                 story.append(Spacer(1, 0.08*inch))
         
@@ -205,18 +206,18 @@ class PDFGenerationService:
         if content.projects:
             story.append(Paragraph("PROJECTS", self.styles['SectionHeader']))
             for proj in content.projects:
-                proj_name = f"<b>{proj.get('name', 'Project')}</b>"
+                proj_name = f"<b>{proj.name}</b>"
                 story.append(Paragraph(proj_name, self.styles['JobTitle']))
                 
-                if proj.get('technologies'):
-                    tech_text = f"Technologies: {proj['technologies']}"
+                if proj.technologies:
+                    tech_text = f"Technologies: {proj.technologies}"
                     story.append(Paragraph(tech_text, self.styles['CompanyName']))
                 
-                if proj.get('description'):
-                    story.append(Paragraph(f"• {proj['description']}", self.styles['BulletPoint']))
+                if proj.description:
+                    story.append(Paragraph(f"• {proj.description}", self.styles['BulletPoint']))
                 
-                if proj.get('impact'):
-                    story.append(Paragraph(f"• {proj['impact']}", self.styles['BulletPoint']))
+                if proj.impact:
+                    story.append(Paragraph(f"• {proj.impact}", self.styles['BulletPoint']))
                 
                 story.append(Spacer(1, 0.08*inch))
         
