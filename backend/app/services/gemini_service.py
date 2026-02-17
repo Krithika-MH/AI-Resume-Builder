@@ -13,33 +13,50 @@ import json
 import re
 
 
+
+
 class GeminiService:
     def __init__(self):
         self.client   = genai.Client(api_key=settings.GEMINI_API_KEY)
         self.model_id = 'gemini-2.5-flash'
         print(f"✅ Gemini Service initialized with model: {self.model_id}")
 
+
+
+
     # ------------------------------------------------------------------ #
-    #  PUBLIC: main entry point                                            #
+    #  PUBLIC: main entry point                                             #
     # ------------------------------------------------------------------ #
     def generate_resume_content(
         self,
-        full_name:            str,
-        phone:                str,
-        email:                str,
-        target_role:          str,
-        job_description:      str  = None,
-        existing_resume_text: str  = None,
-        user_data:            dict = None,   # ← structured form data
+        full_name:              str,
+        phone:                  str,
+        email:                  str,
+        target_role:            str,
+        template:               str = "professional",  # ✅ DEFAULT FIXED
+        job_description:        str  = None,
+        existing_resume_text:   str  = None,
+        user_data:              dict = None,   # ← structured form data
     ) -> ResumeContent:
 
+
+
+
         print(f"\n🤖 Generating resume for: {full_name}  |  Role: {target_role}")
+        print(f"📋 Template used: {template or 'professional'}")  # ✅ DEBUG
+
+
+
 
         # ── Build prompt ──────────────────────────────────────────────
         prompt = self._build_prompt(
             full_name, phone, email, target_role,
+            template or "professional",  # ✅ SAFE DEFAULT
             job_description, existing_resume_text, user_data
         )
+
+
+
 
         try:
             config = types.GenerateContentConfig(
@@ -49,6 +66,9 @@ class GeminiService:
                 response_mime_type="application/json",
             )
 
+
+
+
             print("📡 Calling Gemini API…")
             response = self.client.models.generate_content(
                 model=self.model_id,
@@ -56,17 +76,29 @@ class GeminiService:
                 config=config,
             )
 
+
+
+
             raw = response.text
             print(f"✅ Received {len(raw)} chars")
+
+
+
 
             data = self._parse_json(raw)
             if not data:
                 raise ValueError("Empty / unparseable response")
 
+
+
+
             return self._build_resume_content(
                 full_name, phone, email, target_role,
                 data, user_data
             )
+
+
+
 
         except Exception as e:
             print(f"❌ Gemini error: {e}")
@@ -76,22 +108,76 @@ class GeminiService:
                 full_name, phone, email, target_role, user_data
             )
 
+
+
+
     # ------------------------------------------------------------------ #
-    #  Prompt builder                                                      #
+    #  Prompt builder                                                         #
     # ------------------------------------------------------------------ #
     def _build_prompt(
         self,
         full_name, phone, email, target_role,
+        template,  # ✅ Now receives safe default
         job_description, existing_resume_text, user_data,
     ) -> str:
+
+
+
 
         # ── Summarise what the user actually gave us ──────────────────
         ud = user_data or {}
 
+
+
+
         lines = [
-            f"You are a professional resume writer. Your task is ONLY to polish and",
-            f"professionally reword the information below — do NOT invent or add any",
-            f"facts, companies, schools, dates, or projects that are not provided.",
+            f"You are a professional resume writer.",
+            f"The resume style must be: {(template or 'professional').upper()}",
+            "",
+            "STYLE RULES:",
+        ]
+
+
+
+        if (template or "professional").lower() == "professional":
+            lines += [
+                "- Corporate tone suitable for large MNCs.",
+                "- Balanced technical and business impact.",
+                "- Clear structured bullet points.",
+                "- Moderate emphasis on metrics and leadership.",
+            ]
+        elif (template or "professional").lower() == "modern":
+            lines += [
+                "- Highly impact-driven and metric-heavy.",
+                "- Strong technical depth emphasis.",
+                "- Highlight scalability, system design, performance improvements.",
+                "- Use concise powerful language.",
+                "- Optimized for FAANG and top tech companies.",
+            ]
+        elif (template or "professional").lower() == "classic":
+            lines += [
+                "- Traditional professional wording.",
+                "- Conservative phrasing.",
+                "- Slightly more descriptive but still concise.",
+                "- Suitable for finance, government, or traditional industries.",
+            ]
+
+
+
+        lines += [
+            "",
+            "IMPACT & QUALITY RULES (CRITICAL):",
+            "- Every experience bullet must start with a strong action verb.",
+            "- Avoid weak phrases like 'responsible for', 'worked on', 'helped with'.",
+            "- Focus on achievements, not responsibilities.",
+            "- Add measurable metrics (%, numbers, performance, scale) ONLY if clearly implied.",
+            "- Use engineering language when applicable (scalable, optimized, automated, reduced latency, improved performance, etc.).",
+            "- Emphasize ownership, impact, and results.",
+            "- Keep bullet points concise and high-impact.",
+            "- Ensure ATS keyword alignment with target role.",
+            "- Do NOT use tables, columns, or formatting symbols.",
+            "",
+            "Do NOT invent any information.",
             f"",
             f"=== CANDIDATE DETAILS ===",
             f"Name        : {full_name}",
@@ -100,8 +186,14 @@ class GeminiService:
             f"Target Role : {target_role}",
         ]
 
+
+
+
         if ud.get('linkedin'):  lines.append(f"LinkedIn    : {ud['linkedin']}")
         if ud.get('github'):    lines.append(f"GitHub      : {ud['github']}")
+
+
+
 
         # Summary hint
         if ud.get('summary'):
@@ -113,6 +205,9 @@ class GeminiService:
                       "the skills, experience, and education listed below. Do NOT mention",
                       "companies or achievements that aren't listed."]
 
+
+
+
         # Skills
         tech = ud.get('tech_skills', [])
         soft = ud.get('soft_skills', [])
@@ -122,12 +217,15 @@ class GeminiService:
                       ", ".join(all_skills)]
         else:
             lines += ["", "=== SKILLS ===",
-                      "No skills provided. Generate 8 common skills for this role."]
+                      f"Generate 8 skills MOST relevant to {target_role}. Prioritize technical and ATS-relevant keywords."]
+
+
+
 
         # Experience
         exp_list = ud.get('experience', [])
         if exp_list:
-            lines += ["", "=== WORK EXPERIENCE (polish bullets, keep all facts exact) ==="]
+            lines += ["", "=== WORK EXPERIENCE (rewrite using strong action verbs, highlight measurable impact, optimize for ATS keywords, keep facts exact, do NOT fabricate data) ==="]
             for i, e in enumerate(exp_list, 1):
                 lines.append(f"\n-- Position {i} --")
                 lines.append(f"Title    : {e.get('title','')}")
@@ -136,7 +234,7 @@ class GeminiService:
                 lines.append(f"Location : {e.get('location','')}")
                 resps = e.get('responsibilities', [])
                 if resps:
-                    lines.append("Bullets (improve wording, keep meaning):")
+                    lines.append("Bullets (rewrite using strong action verbs, highlight measurable impact, optimize for ATS keywords, keep facts exact, do NOT fabricate data):")
                     for r in resps:
                         lines.append(f"  - {r}")
                 else:
@@ -144,6 +242,9 @@ class GeminiService:
         else:
             lines += ["", "=== WORK EXPERIENCE ===",
                       "No experience provided. Leave experience list empty ([])."]
+
+
+
 
         # Education
         edu_list = ud.get('education', [])
@@ -159,6 +260,9 @@ class GeminiService:
             lines += ["", "=== EDUCATION ===",
                       "No education provided. Leave education list empty ([])."]
 
+
+
+
         # Projects
         proj_list = ud.get('projects', [])
         if proj_list:
@@ -173,12 +277,18 @@ class GeminiService:
             lines += ["", "=== PROJECTS ===",
                       "No projects provided. Leave projects list empty ([])."]
 
+
+
+
         # Certifications
         certs = ud.get('certifications', [])
         if certs:
             lines += ["", "=== CERTIFICATIONS (use exactly as given) ==="] + certs
         else:
             lines += ["", "=== CERTIFICATIONS ===", "None provided. Leave empty ([])."]
+
+
+
 
         # Achievements
         achs = ud.get('achievements', [])
@@ -187,15 +297,24 @@ class GeminiService:
         else:
             lines += ["", "=== ACHIEVEMENTS ===", "None provided. Leave empty ([])."]
 
+
+
+
         # Job description
         if job_description:
             lines += ["", "=== JOB DESCRIPTION (align keywords only – don't invent) ===",
                       job_description[:800]]
 
+
+
+
         # Existing resume
         if existing_resume_text:
             lines += ["", "=== EXISTING RESUME TEXT (extract real facts from here) ===",
                       existing_resume_text[:1500]]
+
+
+
 
         # Output format
         lines += [
@@ -209,7 +328,7 @@ class GeminiService:
             '  "education":  [{"degree":"","institution":"","year":"","gpa":""}],',
             '  "projects":   [{"name":"","description":"","technologies":"","impact":""}],',
             '  "certifications": ["string"],',
-            '  "achievements":   ["string"],',
+            '  "achievements":  ["string"],',
             '  "linkedin": "",',
             '  "github":   ""',
             '}',
@@ -219,12 +338,21 @@ class GeminiService:
             "2. DO improve grammar, add action verbs, and add metrics ONLY when clearly implied.",
             "3. Keep every fact exactly as given.",
             "4. If a section is empty above, output an empty list [] for it.",
+            "5. Every experience responsibility must be rewritten as a strong achievement statement.",
+            "6. Do NOT return responsibility-style sentences.",
+            "7. Use concise bullet points (1–2 lines max).",
         ]
+
+
+
 
         return "\n".join(lines)
 
+
+
+
     # ------------------------------------------------------------------ #
-    #  Parse Gemini response                                               #
+    #  Parse Gemini response                                                     #
     # ------------------------------------------------------------------ #
     def _parse_json(self, raw: str) -> dict:
         try:
@@ -242,8 +370,11 @@ class GeminiService:
             print("First 400 chars:", raw[:400])
             return {}
 
+
+
+
     # ------------------------------------------------------------------ #
-    #  Build ResumeContent from Gemini's polished JSON                    #
+    #  Build ResumeContent from Gemini's polished JSON                          #
     # ------------------------------------------------------------------ #
     def _build_resume_content(
         self,
@@ -253,6 +384,9 @@ class GeminiService:
     ) -> ResumeContent:
         ud = user_data or {}
 
+
+
+
         contact = ContactInfo(
             phone=phone,
             email=email,
@@ -260,6 +394,9 @@ class GeminiService:
             github=ud.get('github')   or data.get('github',   ''),
             portfolio=ud.get('portfolio', ''),
         )
+
+
+
 
         # Experience
         experience = []
@@ -275,6 +412,9 @@ class GeminiService:
             except Exception as ex:
                 print(f"⚠️ Bad exp entry: {ex}")
 
+
+
+
         # Education
         education = []
         for e in data.get('education', []):
@@ -287,6 +427,9 @@ class GeminiService:
                 ))
             except Exception as ex:
                 print(f"⚠️ Bad edu entry: {ex}")
+
+
+
 
         # Projects
         projects = []
@@ -301,6 +444,9 @@ class GeminiService:
             except Exception as ex:
                 print(f"⚠️ Bad proj entry: {ex}")
 
+
+
+
         rc = ResumeContent(
             full_name=full_name,
             contact=contact,
@@ -313,6 +459,9 @@ class GeminiService:
             achievements=data.get('achievements', []),
         )
 
+
+
+
         print(f"  Summary chars : {len(rc.summary)}")
         print(f"  Skills        : {len(rc.skills)}")
         print(f"  Experience    : {len(rc.experience)}")
@@ -320,8 +469,11 @@ class GeminiService:
         print(f"  Projects      : {len(rc.projects)}")
         return rc
 
+
+
+
     # ------------------------------------------------------------------ #
-    #  Fallback: use raw user data without AI polishing                   #
+    #  Fallback: use raw user data without AI polishing                          #
     # ------------------------------------------------------------------ #
     def _build_from_raw_user_data(
         self,
@@ -331,12 +483,18 @@ class GeminiService:
         print("⚠️  Using raw user data as fallback (no AI polish)")
         ud = user_data or {}
 
+
+
+
         contact = ContactInfo(
             phone=phone, email=email,
             linkedin=ud.get('linkedin', ''),
             github=ud.get('github', ''),
             portfolio=ud.get('portfolio', ''),
         )
+
+
+
 
         tech = ud.get('tech_skills', [])
         soft = ud.get('soft_skills', [])
@@ -345,11 +503,17 @@ class GeminiService:
             'Time Management', 'Critical Thinking',
         ]
 
+
+
+
         summary = ud.get('summary') or (
             f"Motivated professional seeking {target_role} role. "
             "Skilled in " + ", ".join(skills[:4]) + ". "
             "Committed to delivering high-quality results."
         )
+
+
+
 
         experience = []
         for e in ud.get('experience', []):
@@ -366,6 +530,9 @@ class GeminiService:
                 ]),
             ))
 
+
+
+
         education = []
         for e in ud.get('education', []):
             if not e.get('degree') and not e.get('institution'):
@@ -377,6 +544,9 @@ class GeminiService:
                 gpa=e.get('gpa') or None,
             ))
 
+
+
+
         projects = []
         for p in ud.get('projects', []):
             if not p.get('name'):
@@ -387,6 +557,9 @@ class GeminiService:
                 technologies=p.get('technologies', ''),
                 impact=p.get('impact', ''),
             ))
+
+
+
 
         return ResumeContent(
             full_name=full_name,
