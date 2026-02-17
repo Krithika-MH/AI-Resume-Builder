@@ -1,231 +1,397 @@
 """
-DOCX Generation Service using python-docx
-Creates editable, ATS-friendly Word documents
+DOCX Generation Service – 3 visually distinct templates.
+Professional: Calibri, centered, standard corporate look.
+Modern: Left-aligned, navy/green accents, FAANG-style.
+Classic: Times New Roman, serif, ruled dividers.
 """
 from docx import Document
-from docx.shared import Pt, Inches, RGBColor
+from docx.shared import Pt, Inches, RGBColor, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 from backend.app.models.schemas import ResumeContent
 from io import BytesIO
 
 
+# ── Brand colours ──────────────────────────────────────────
+NAVY  = RGBColor(0x1E, 0x3A, 0x4C)
+GREEN = RGBColor(0x2E, 0x7D, 0x52)
+BLACK = RGBColor(0x11, 0x11, 0x11)
+DGRAY = RGBColor(0x44, 0x44, 0x44)
+LGRAY = RGBColor(0x88, 0x88, 0x88)
+
+
+def _add_bottom_border(paragraph, color_hex="000000"):
+    """Add bottom border (underline) to a paragraph via XML."""
+    pPr = paragraph._p.get_or_add_pPr()
+    pBdr = OxmlElement('w:pBdr')
+    bottom = OxmlElement('w:bottom')
+    bottom.set(qn('w:val'), 'single')
+    bottom.set(qn('w:sz'), '4')
+    bottom.set(qn('w:space'), '1')
+    bottom.set(qn('w:color'), color_hex)
+    pBdr.append(bottom)
+    pPr.append(pBdr)
+
+
 class DOCXGenerationService:
-    """Service for generating DOCX resumes"""
-    
+
     def generate_docx(self, resume_content: ResumeContent, template: str = "professional") -> BytesIO:
-        """
-        Generate DOCX resume from content
-        
-        Args:
-            resume_content: Structured resume content
-            template: Template style to use
-            
-        Returns:
-            BytesIO object containing the DOCX file
-        """
         doc = Document()
-        
-        # Set document margins
-        sections = doc.sections
-        for section in sections:
-            section.top_margin = Inches(0.75)
-            section.bottom_margin = Inches(0.75)
-            section.left_margin = Inches(0.75)
-            section.right_margin = Inches(0.75)
-        
-        # Build content based on template
+        for sec in doc.sections:
+            sec.top_margin    = Inches(0.7)
+            sec.bottom_margin = Inches(0.7)
+            sec.left_margin   = Inches(0.75)
+            sec.right_margin  = Inches(0.75)
+
         if template == "modern":
-            self._build_modern_template(doc, resume_content)
+            self._modern(doc, resume_content)
         elif template == "classic":
-            self._build_classic_template(doc, resume_content)
-        else:  # professional (default)
-            self._build_professional_template(doc, resume_content)
-        
-        # Save to BytesIO
-        buffer = BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
-        return buffer
-    
-    def _build_professional_template(self, doc: Document, content: ResumeContent):
-        """Build professional template layout"""
-        
-        # Header - Name (Centered, Bold, Large)
-        name_para = doc.add_paragraph()
-        name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        name_run = name_para.add_run(content.full_name)
-        name_run.font.size = Pt(20)
-        name_run.font.bold = True
-        name_run.font.color.rgb = RGBColor(26, 26, 26)
-        
-        # Contact Information (Centered)
-        contact_parts = []
-        if content.contact.phone:
-            contact_parts.append(content.contact.phone)
-        if content.contact.email:
-            contact_parts.append(content.contact.email)
-        if content.contact.linkedin:
-            contact_parts.append(content.contact.linkedin)
-        
-        if contact_parts:
-            contact_para = doc.add_paragraph()
-            contact_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            contact_run = contact_para.add_run(" | ".join(contact_parts))
-            contact_run.font.size = Pt(10)
-            contact_run.font.color.rgb = RGBColor(51, 51, 51)
-        
-        # Add spacing
+            self._classic(doc, resume_content)
+        else:
+            self._professional(doc, resume_content)
+
+        buf = BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        return buf
+
+    # ═══════════════════════════════════════════════════════
+    #  PROFESSIONAL – Calibri, centered header, thin dividers
+    # ═══════════════════════════════════════════════════════
+    def _professional(self, doc: Document, rc: ResumeContent):
+
+        def name_para():
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(rc.full_name)
+            r.font.name = 'Calibri'; r.font.size = Pt(22); r.bold = True
+            r.font.color.rgb = BLACK
+            return p
+
+        def contact_para():
+            parts = _cp(rc)
+            if not parts: return
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(' | '.join(parts))
+            r.font.name = 'Calibri'; r.font.size = Pt(9.5)
+            r.font.color.rgb = DGRAY
+
+        def sec_hdr(title):
+            p = doc.add_paragraph()
+            _add_bottom_border(p, "AAAAAA")
+            r = p.add_run(title.upper())
+            r.font.name = 'Calibri'; r.font.size = Pt(11); r.bold = True
+            r.font.color.rgb = BLACK
+            p.paragraph_format.space_before = Pt(12)
+            p.paragraph_format.space_after  = Pt(4)
+
+        def job_title(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Calibri'; r.font.size = Pt(10.5); r.bold = True
+            r.font.color.rgb = BLACK
+            p.paragraph_format.space_after = Pt(1)
+
+        def sub_line(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Calibri'; r.font.size = Pt(9.5); r.italic = True
+            r.font.color.rgb = LGRAY
+            p.paragraph_format.space_after = Pt(3)
+
+        def bullet(text):
+            p = doc.add_paragraph(style='List Bullet')
+            r = p.add_run(text)
+            r.font.name = 'Calibri'; r.font.size = Pt(9.5)
+            r.font.color.rgb = BLACK
+            p.paragraph_format.left_indent  = Inches(0.2)
+            p.paragraph_format.space_after  = Pt(2)
+
+        def body(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Calibri'; r.font.size = Pt(10)
+            r.font.color.rgb = BLACK
+            p.paragraph_format.space_after = Pt(5)
+
+        # ── Build ──
+        name_para()
+        contact_para()
         doc.add_paragraph()
-        
-        # Professional Summary
-        if content.summary:
-            self._add_section_header(doc, "PROFESSIONAL SUMMARY")
-            summary_para = doc.add_paragraph(content.summary)
-            summary_para.paragraph_format.space_after = Pt(12)
-            self._format_body_text(summary_para)
-        
-        # Skills
-        if content.skills:
-            self._add_section_header(doc, "SKILLS")
-            skills_text = " • ".join(content.skills)
-            skills_para = doc.add_paragraph(skills_text)
-            skills_para.paragraph_format.space_after = Pt(12)
-            self._format_body_text(skills_para)
-        
-        # Professional Experience
-        if content.experience:
-            self._add_section_header(doc, "PROFESSIONAL EXPERIENCE")
-            
-            for exp in content.experience:
-                # Job Title (Bold)
-                title_para = doc.add_paragraph()
-                title_run = title_para.add_run(exp.title)
-                title_run.font.size = Pt(11)
-                title_run.font.bold = True
-                title_run.font.color.rgb = RGBColor(26, 26, 26)
-                title_para.paragraph_format.space_after = Pt(2)
-                
-                # Company, Duration, Location (Italic)
-                company_para = doc.add_paragraph()
-                company_text = f"{exp.company} | {exp.duration}"
-                if exp.location:
-                    company_text += f" | {exp.location}"
-                company_run = company_para.add_run(company_text)
-                company_run.font.size = Pt(10)
-                company_run.font.italic = True
-                company_run.font.color.rgb = RGBColor(85, 85, 85)
-                company_para.paragraph_format.space_after = Pt(4)
-                
-                # Responsibilities (Bulleted)
-                for resp in exp.responsibilities:
-                    bullet_para = doc.add_paragraph(resp, style='List Bullet')
-                    bullet_para.paragraph_format.left_indent = Inches(0.25)
-                    bullet_para.paragraph_format.space_after = Pt(3)
-                    self._format_body_text(bullet_para, size=9)
-                
-                # Add spacing between jobs
+
+        if rc.summary: sec_hdr('Professional Summary'); body(rc.summary)
+        if rc.skills:  sec_hdr('Skills'); body(', '.join(rc.skills))
+
+        if rc.experience:
+            sec_hdr('Professional Experience')
+            for exp in rc.experience:
+                job_title(exp.title)
+                s = f'{exp.company} | {exp.duration}'
+                if exp.location: s += f' | {exp.location}'
+                sub_line(s)
+                for r in (exp.responsibilities or []): bullet(r)
                 doc.add_paragraph()
-        
-        # Education
-        if content.education:
-            self._add_section_header(doc, "EDUCATION")
-            
-            for edu in content.education:
-                # Degree (Bold)
-                degree_para = doc.add_paragraph()
-                degree_run = degree_para.add_run(edu.degree)
-                degree_run.font.size = Pt(11)
-                degree_run.font.bold = True
-                degree_run.font.color.rgb = RGBColor(26, 26, 26)
-                degree_para.paragraph_format.space_after = Pt(2)
-                
-                # Institution and Year
-                inst_para = doc.add_paragraph()
-                inst_text = f"{edu.institution} | {edu.year}"
-                if edu.gpa:
-                    inst_text += f" | GPA: {edu.gpa}"
-                inst_run = inst_para.add_run(inst_text)
-                inst_run.font.size = Pt(10)
-                inst_run.font.italic = True
-                inst_run.font.color.rgb = RGBColor(85, 85, 85)
-                inst_para.paragraph_format.space_after = Pt(8)
-        
-        # Projects
-        if content.projects:
-            self._add_section_header(doc, "PROJECTS")
-            
-            for proj in content.projects:
-                # Project Name (Bold)
-                proj_para = doc.add_paragraph()
-                proj_run = proj_para.add_run(proj.name)
-                proj_run.font.size = Pt(11)
-                proj_run.font.bold = True
-                proj_run.font.color.rgb = RGBColor(26, 26, 26)
-                proj_para.paragraph_format.space_after = Pt(2)
-                
-                # Technologies
-                if proj.technologies:
-                    tech_para = doc.add_paragraph()
-                    tech_run = tech_para.add_run(f"Technologies: {proj.technologies}")
-                    tech_run.font.size = Pt(10)
-                    tech_run.font.italic = True
-                    tech_run.font.color.rgb = RGBColor(85, 85, 85)
-                    tech_para.paragraph_format.space_after = Pt(4)
-                
-                # Description and Impact (Bulleted)
-                if proj.description:
-                    desc_para = doc.add_paragraph(proj.description, style='List Bullet')
-                    desc_para.paragraph_format.left_indent = Inches(0.25)
-                    self._format_body_text(desc_para, size=9)
-                
-                if proj.impact:
-                    impact_para = doc.add_paragraph(proj.impact, style='List Bullet')
-                    impact_para.paragraph_format.left_indent = Inches(0.25)
-                    self._format_body_text(impact_para, size=9)
-                
+
+        if rc.education:
+            sec_hdr('Education')
+            for edu in rc.education:
+                job_title(edu.degree)
+                s = f'{edu.institution} | {edu.year}'
+                if edu.gpa: s += f' | GPA: {edu.gpa}'
+                sub_line(s)
+
+        if rc.projects:
+            sec_hdr('Projects')
+            for p in rc.projects:
+                job_title(p.name)
+                if p.technologies: sub_line(f'Technologies: {p.technologies}')
+                if p.description:  bullet(p.description)
+                if p.impact:       bullet(p.impact)
                 doc.add_paragraph()
-        
-        # Certifications
-        if content.certifications:
-            self._add_section_header(doc, "CERTIFICATIONS")
-            for cert in content.certifications:
-                cert_para = doc.add_paragraph(cert, style='List Bullet')
-                cert_para.paragraph_format.left_indent = Inches(0.25)
-                self._format_body_text(cert_para, size=9)
-        
-        # Achievements
-        if content.achievements:
-            self._add_section_header(doc, "ACHIEVEMENTS")
-            for achievement in content.achievements:
-                ach_para = doc.add_paragraph(achievement, style='List Bullet')
-                ach_para.paragraph_format.left_indent = Inches(0.25)
-                self._format_body_text(ach_para, size=9)
-    
-    def _add_section_header(self, doc: Document, header_text: str):
-        """Add formatted section header"""
-        header_para = doc.add_paragraph()
-        header_run = header_para.add_run(header_text)
-        header_run.font.size = Pt(14)
-        header_run.font.bold = True
-        header_run.font.color.rgb = RGBColor(44, 62, 80)
-        
-        # Add bottom border to section header
-        header_para.paragraph_format.space_after = Pt(8)
-        header_para.paragraph_format.space_before = Pt(12)
-    
-    def _format_body_text(self, paragraph, size: int = 10):
-        """Format paragraph as body text"""
-        for run in paragraph.runs:
-            run.font.size = Pt(size)
-            run.font.name = 'Calibri'
-            run.font.color.rgb = RGBColor(26, 26, 26)
-    
-    def _build_modern_template(self, doc: Document, content: ResumeContent):
-        """Build modern template with color accents"""
-        # Similar to professional but with more color
-        self._build_professional_template(doc, content)
-    
-    def _build_classic_template(self, doc: Document, content: ResumeContent):
-        """Build classic template with traditional layout"""
-        # Similar to professional but more conservative
-        self._build_professional_template(doc, content)
+
+        if rc.certifications:
+            sec_hdr('Certifications')
+            for c in rc.certifications:
+                if c and c.strip(): bullet(c)
+
+        if rc.achievements:
+            sec_hdr('Achievements')
+            for a in rc.achievements:
+                if a and a.strip(): bullet(a)
+
+    # ═══════════════════════════════════════════════════════
+    #  MODERN – Calibri, navy name, green section headers
+    # ═══════════════════════════════════════════════════════
+    def _modern(self, doc: Document, rc: ResumeContent):
+
+        def name_para():
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            r = p.add_run(rc.full_name)
+            r.font.name = 'Calibri'; r.font.size = Pt(26); r.bold = True
+            r.font.color.rgb = NAVY
+            return p
+
+        def accent_line():
+            p = doc.add_paragraph()
+            _add_bottom_border(p, "2E7D52")
+            p.paragraph_format.space_after = Pt(4)
+
+        def contact_para():
+            parts = _cp(rc)
+            if not parts: return
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            r = p.add_run('  ·  '.join(parts))
+            r.font.name = 'Calibri'; r.font.size = Pt(9.5)
+            r.font.color.rgb = DGRAY
+
+        def sec_hdr(title):
+            p = doc.add_paragraph()
+            r = p.add_run(title.upper())
+            r.font.name = 'Calibri'; r.font.size = Pt(11); r.bold = True
+            r.font.color.rgb = GREEN
+            p.paragraph_format.space_before = Pt(14)
+            p.paragraph_format.space_after  = Pt(3)
+            _add_bottom_border(p, "D1E8DB")
+
+        def job_title(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Calibri'; r.font.size = Pt(11); r.bold = True
+            r.font.color.rgb = NAVY
+            p.paragraph_format.space_after = Pt(1)
+
+        def sub_line(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Calibri'; r.font.size = Pt(9.5)
+            r.font.color.rgb = LGRAY
+            p.paragraph_format.space_after = Pt(3)
+
+        def bullet(text, symbol='▸'):
+            p = doc.add_paragraph()
+            r = p.add_run(f'{symbol}  {text}')
+            r.font.name = 'Calibri'; r.font.size = Pt(9.5)
+            r.font.color.rgb = BLACK
+            p.paragraph_format.left_indent  = Inches(0.18)
+            p.paragraph_format.space_after  = Pt(2)
+
+        def body(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Calibri'; r.font.size = Pt(10)
+            r.font.color.rgb = BLACK
+            p.paragraph_format.space_after = Pt(4)
+
+        # ── Build ──
+        name_para()
+        accent_line()
+        contact_para()
+        doc.add_paragraph()
+
+        if rc.summary: sec_hdr('Profile'); body(rc.summary)
+        if rc.skills:  sec_hdr('Core Skills'); body('   ▸   '.join(rc.skills))
+
+        if rc.experience:
+            sec_hdr('Experience')
+            for exp in rc.experience:
+                job_title(exp.title)
+                s = f'{exp.company}'
+                if exp.location: s += f', {exp.location}'
+                s += f'  |  {exp.duration}'
+                sub_line(s)
+                for r in (exp.responsibilities or []): bullet(r)
+                doc.add_paragraph()
+
+        if rc.education:
+            sec_hdr('Education')
+            for edu in rc.education:
+                job_title(edu.degree)
+                s = f'{edu.institution}  |  {edu.year}'
+                if edu.gpa: s += f'  |  CGPA: {edu.gpa}'
+                sub_line(s)
+
+        if rc.projects:
+            sec_hdr('Projects')
+            for p in rc.projects:
+                job_title(p.name)
+                if p.technologies: sub_line(f'Stack: {p.technologies}')
+                if p.description:  bullet(p.description)
+                if p.impact:       bullet(f'Impact: {p.impact}')
+                doc.add_paragraph()
+
+        if rc.certifications:
+            sec_hdr('Certifications')
+            for c in rc.certifications:
+                if c and c.strip(): bullet(c)
+
+        if rc.achievements:
+            sec_hdr('Achievements & Awards')
+            for a in rc.achievements:
+                if a and a.strip(): bullet(a)
+
+    # ═══════════════════════════════════════════════════════
+    #  CLASSIC – Times New Roman, serif, ruled dividers
+    # ═══════════════════════════════════════════════════════
+    def _classic(self, doc: Document, rc: ResumeContent):
+
+        def name_para():
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(rc.full_name)
+            r.font.name = 'Times New Roman'; r.font.size = Pt(24); r.bold = True
+            r.font.color.rgb = BLACK
+
+        def full_rule():
+            p = doc.add_paragraph()
+            _add_bottom_border(p, "111111")
+            p.paragraph_format.space_before = Pt(0)
+            p.paragraph_format.space_after  = Pt(0)
+
+        def contact_para():
+            parts = _cp(rc)
+            if not parts: return
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(' | '.join(parts))
+            r.font.name = 'Times New Roman'; r.font.size = Pt(10)
+            r.font.color.rgb = DGRAY
+
+        def sec_hdr(title):
+            full_rule()
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = p.add_run(title)
+            r.font.name = 'Times New Roman'; r.font.size = Pt(12); r.bold = True
+            r.font.color.rgb = BLACK
+            p.paragraph_format.space_before = Pt(2)
+            p.paragraph_format.space_after  = Pt(2)
+            full_rule()
+
+        def job_title(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Times New Roman'; r.font.size = Pt(11); r.bold = True
+            r.font.color.rgb = BLACK
+            p.paragraph_format.space_after = Pt(1)
+
+        def sub_line(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Times New Roman'; r.font.size = Pt(10); r.italic = True
+            r.font.color.rgb = DGRAY
+            p.paragraph_format.space_after = Pt(3)
+
+        def bullet(text):
+            p = doc.add_paragraph()
+            r = p.add_run(f'•   {text}')
+            r.font.name = 'Times New Roman'; r.font.size = Pt(10)
+            r.font.color.rgb = BLACK
+            p.paragraph_format.left_indent  = Inches(0.2)
+            p.paragraph_format.space_after  = Pt(3)
+
+        def body(text):
+            p = doc.add_paragraph()
+            r = p.add_run(text)
+            r.font.name = 'Times New Roman'; r.font.size = Pt(10.5)
+            r.font.color.rgb = BLACK
+            p.paragraph_format.space_after = Pt(5)
+
+        # ── Build ──
+        name_para()
+        full_rule()
+        contact_para()
+        doc.add_paragraph()
+
+        if rc.summary: sec_hdr('PROFESSIONAL SUMMARY'); body(rc.summary)
+        if rc.skills:  sec_hdr('SKILLS'); body(' • '.join(rc.skills))
+
+        if rc.experience:
+            sec_hdr('PROFESSIONAL EXPERIENCE')
+            for exp in rc.experience:
+                job_title(exp.title)
+                s = f'{exp.company}  |  {exp.duration}'
+                if exp.location: s += f'  |  {exp.location}'
+                sub_line(s)
+                for r in (exp.responsibilities or []): bullet(r)
+                doc.add_paragraph()
+
+        if rc.education:
+            sec_hdr('EDUCATION')
+            for edu in rc.education:
+                job_title(edu.degree)
+                s = f'{edu.institution}  |  {edu.year}'
+                if edu.gpa: s += f'  |  GPA: {edu.gpa}'
+                sub_line(s)
+
+        if rc.projects:
+            sec_hdr('PROJECTS')
+            for p in rc.projects:
+                job_title(p.name)
+                if p.technologies: sub_line(f'Technologies: {p.technologies}')
+                if p.description:  bullet(p.description)
+                if p.impact:       bullet(p.impact)
+                doc.add_paragraph()
+
+        if rc.certifications:
+            sec_hdr('CERTIFICATIONS')
+            for c in rc.certifications:
+                if c and c.strip(): bullet(c)
+
+        if rc.achievements:
+            sec_hdr('ACHIEVEMENTS')
+            for a in rc.achievements:
+                if a and a.strip(): bullet(a)
+
+
+# ── Shared helper ──────────────────────────────────────────
+def _cp(rc: ResumeContent):
+    parts = []
+    if rc.contact.phone:    parts.append(rc.contact.phone)
+    if rc.contact.email:    parts.append(rc.contact.email)
+    if rc.contact.linkedin: parts.append(rc.contact.linkedin)
+    if rc.contact.github:   parts.append(rc.contact.github)
+    return parts

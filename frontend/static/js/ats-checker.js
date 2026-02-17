@@ -1,214 +1,122 @@
-// ATS Checker JavaScript
+/* ats-checker.js */
+let uploadedFile = null;
 
-document.getElementById('atsCheckForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await checkATSScore();
-});
-
-function updateFileName() {
-    const fileInput = document.getElementById('resumeFile');
-    const fileLabel = document.getElementById('fileLabel');
-    
-    if (fileInput.files.length > 0) {
-        fileLabel.textContent = fileInput.files[0].name;
-    } else {
-        fileLabel.textContent = 'Click to upload or drag and drop';
-    }
+function handleFileSelect(input) {
+  if (input.files[0]) {
+    uploadedFile = input.files[0];
+    document.getElementById('fileLabel').textContent = '✅ ' + uploadedFile.name;
+    document.getElementById('dropZone').style.borderColor = '#2E7D52';
+  }
 }
-
-async function checkATSScore() {
-    const btn = document.getElementById('checkBtn');
-    const btnText = document.getElementById('btnText');
-    const btnLoader = document.getElementById('btnLoader');
-    
-    // Show loading state
-    btn.disabled = true;
-    btnText.classList.add('hidden');
-    btnLoader.classList.remove('hidden');
-    
-    try {
-        // Prepare form data
-        const formData = new FormData();
-        const fileInput = document.getElementById('resumeFile');
-        
-        if (!fileInput.files[0]) {
-            throw new Error('Please upload a resume file');
-        }
-        
-        formData.append('resume_file', fileInput.files[0]);
-        formData.append('target_role', document.getElementById('targetRole').value);
-        
-        const jobDesc = document.getElementById('jobDescription').value;
-        if (jobDesc) {
-            formData.append('job_description', jobDesc);
-        }
-        
-        // Call API
-        const response = await fetch('/api/check-ats-score', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to check ATS score');
-        }
-        
-        const atsScore = await response.json();
-        
-        // Display results
-        displayResults(atsScore);
-        
-        // Show success message
-        showNotification('ATS score calculated successfully!', 'success');
-        
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification(error.message || 'Failed to check ATS score', 'error');
-    } finally {
-        // Reset button state
-        btn.disabled = false;
-        btnText.classList.remove('hidden');
-        btnLoader.classList.add('hidden');
-    }
-}
-
-function displayResults(atsScore) {
-    // Hide placeholder, show results
-    document.getElementById('placeholder').classList.add('hidden');
-    document.getElementById('resultsContainer').classList.remove('hidden');
-    
-    // Overall score
-    const scoreValue = document.getElementById('scoreValue');
-    const scoreCircle = document.getElementById('scoreCircle');
-    const scoreLevel = document.getElementById('scoreLevel');
-    const scoreMessage = document.getElementById('scoreMessage');
-    
-    scoreValue.textContent = atsScore.overall_score;
-    
-    // Determine score level and color
-    let level, message, circleClass;
-    if (atsScore.overall_score >= 90) {
-        level = 'Excellent';
-        message = 'Your resume is highly optimized for ATS systems!';
-        circleClass = 'score-excellent';
-    } else if (atsScore.overall_score >= 75) {
-        level = 'Good';
-        message = 'Your resume is well-optimized with minor improvements possible.';
-        circleClass = 'score-good';
-    } else if (atsScore.overall_score >= 60) {
-        level = 'Fair';
-        message = 'Your resume meets basic ATS requirements but needs improvement.';
-        circleClass = 'score-fair';
-    } else {
-        level = 'Needs Improvement';
-        message = 'Your resume needs significant optimization for ATS systems.';
-        circleClass = 'score-poor';
-    }
-    
-    scoreLevel.textContent = level;
-    scoreMessage.textContent = message;
-    
-    // Reset circle classes and add new one
-    scoreCircle.className = 'score-circle flex items-center justify-center ' + circleClass;
-    
-    // Update breakdown bars
-    updateScoreBar('skill', atsScore.skill_match);
-    updateScoreBar('keyword', atsScore.keyword_relevance);
-    updateScoreBar('role', atsScore.role_alignment);
-    updateScoreBar('format', atsScore.formatting_score);
-    updateScoreBar('section', atsScore.section_completeness);
-    
-    // Display missing keywords
-    if (atsScore.missing_keywords && atsScore.missing_keywords.length > 0) {
-        const missingSection = document.getElementById('missingKeywordsSection');
-        const missingKeywords = document.getElementById('missingKeywords');
-        
-        missingSection.classList.remove('hidden');
-        missingKeywords.innerHTML = '';
-        
-        atsScore.missing_keywords.forEach(keyword => {
-            const badge = document.createElement('span');
-            badge.className = 'px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm';
-            badge.textContent = keyword;
-            missingKeywords.appendChild(badge);
-        });
-    } else {
-        document.getElementById('missingKeywordsSection').classList.add('hidden');
-    }
-    
-    // Display suggestions
-    const suggestionsList = document.getElementById('suggestionsList');
-    suggestionsList.innerHTML = '';
-    
-    atsScore.suggestions.forEach(suggestion => {
-        const li = document.createElement('li');
-        li.className = 'flex items-start';
-        li.innerHTML = `
-            <svg class="w-5 h-5 text-indigo-600 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-            <span>${suggestion}</span>
-        `;
-        suggestionsList.appendChild(li);
-    });
-}
-
-function updateScoreBar(type, score) {
-    document.getElementById(`${type}Score`).textContent = `${score}/100`;
-    document.getElementById(`${type}Bar`).style.width = `${score}%`;
-}
-
-function showNotification(message, type) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} z-50`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-}
-
-// Drag and drop functionality
-const dropZone = document.querySelector('.border-dashed');
-const fileInput = document.getElementById('resumeFile');
-
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, preventDefaults, false);
-});
-
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-['dragenter', 'dragover'].forEach(eventName => {
-    dropZone.addEventListener(eventName, highlight, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, unhighlight, false);
-});
-
-function highlight(e) {
-    dropZone.classList.add('border-indigo-500', 'bg-indigo-50');
-}
-
-function unhighlight(e) {
-    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
-}
-
-dropZone.addEventListener('drop', handleDrop, false);
 
 function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    
-    if (files.length > 0) {
-        fileInput.files = files;
-        updateFileName();
-    }
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && (f.name.endsWith('.pdf') || f.name.endsWith('.docx'))) {
+    uploadedFile = f;
+    document.getElementById('fileLabel').textContent = '✅ ' + f.name;
+  } else {
+    showToast('Please upload a PDF or DOCX file', 'error');
+  }
+}
+
+async function checkATS() {
+  if (!uploadedFile)   return showToast('Please upload a resume file', 'error');
+  const role = document.getElementById('targetRole').value.trim();
+  if (!role) return showToast('Please enter the target job role', 'error');
+
+  setLoading(true);
+  try {
+    const fd = new FormData();
+    fd.append('resume_file', uploadedFile);
+    fd.append('target_role', role);
+    const jd = document.getElementById('jobDescription').value.trim();
+    if (jd) fd.append('job_description', jd);
+
+    const resp = await fetch('/api/check-ats-score', { method:'POST', body:fd });
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.detail || 'Error'); }
+    const data = await resp.json();
+    renderResults(data);
+  } catch(e) {
+    showToast(e.message, 'error');
+  }
+  setLoading(false);
+}
+
+function renderResults(d) {
+  document.getElementById('placeholder').classList.add('hidden');
+  document.getElementById('results').classList.remove('hidden');
+
+  const score = d.overall_score;
+  // Ring animation
+  const circ = 2 * Math.PI * 68;
+  const offset = circ - (score / 100) * circ;
+  const arc = document.getElementById('ringArc');
+  setTimeout(() => { arc.style.strokeDashoffset = offset; }, 100);
+
+  // Color
+  let color, label, msg;
+  if      (score >= 85) { color='#059669'; label='🟢 Excellent – FAANG Ready';      msg='Your resume is highly optimized. It should pass most ATS systems including FAANG-level filters.'; }
+  else if (score >= 70) { color='#2563EB'; label='🔵 Good – Competitive';            msg='Well optimized. A few targeted improvements will push you into the top tier.'; }
+  else if (score >= 55) { color='#D97706'; label='🟡 Fair – Needs Work';             msg='Meets basic requirements but will be filtered out by FAANG ATS. Follow the suggestions below.'; }
+  else                  { color='#DC2626'; label='🔴 Poor – High Risk of Rejection'; msg='Significant optimization needed before applying to competitive roles.'; }
+
+  arc.setAttribute('stroke', color);
+  document.getElementById('scoreNum').textContent = score;
+  document.getElementById('scoreNum').style.color = color;
+  document.getElementById('scoreLabel').textContent = label;
+  document.getElementById('scoreLabel').style.color = color;
+  document.getElementById('scoreMsg').textContent = msg;
+
+  // Bars
+  const components = [
+    { label:'Skill Match',          val:d.skill_match,        color:'#6366F1' },
+    { label:'Keyword Density',      val:d.keyword_relevance,  color:'#2563EB' },
+    { label:'Role Alignment',       val:d.role_alignment,     color:'#2E7D52' },
+    { label:'Formatting Score',     val:d.formatting_score,   color:'#10B981' },
+    { label:'Section Completeness', val:d.section_completeness,color:'#F59E0B'},
+    { label:'Action Verb Usage',    val:d.action_verb_score || d.role_alignment, color:'#EC4899' },
+    { label:'Quantified Impact',    val:d.quantified_score   || Math.min(d.role_alignment+5,100), color:'#8B5CF6' },
+    { label:'FAANG Compliance',     val:d.faang_compliance   || Math.round((score+d.formatting_score)/2), color:'#EF4444' },
+  ];
+  const barsEl = document.getElementById('bars');
+  barsEl.innerHTML = '';
+  components.forEach(c => {
+    barsEl.innerHTML += `
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="font-medium text-gray-700">${c.label}</span>
+          <span class="font-bold" style="color:${c.color}">${c.val}/100</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${c.val}%;background:${c.color}"></div></div>
+      </div>`;
+  });
+
+  // Missing keywords
+  if (d.missing_keywords?.length) {
+    document.getElementById('kwSection').classList.remove('hidden');
+    document.getElementById('kwChips').innerHTML = d.missing_keywords.map(k => `<span class="kw-chip">${k}</span>`).join('');
+  }
+
+  // AI suggestions
+  const sugEl = document.getElementById('suggestions');
+  sugEl.innerHTML = '';
+  (d.suggestions || []).forEach(s => {
+    sugEl.innerHTML += `<div class="sug-card text-sm text-gray-800">${s}</div>`;
+  });
+}
+
+function setLoading(on) {
+  document.getElementById('btnTxt').classList.toggle('hidden', on);
+  document.getElementById('btnSpin').classList.toggle('hidden', !on);
+  document.getElementById('checkBtn').disabled = on;
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `fixed top-4 right-4 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium z-[100] ${type==='success'?'bg-green-600':'bg-red-600'}`;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3500);
 }

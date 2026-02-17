@@ -76,6 +76,9 @@ class ATSScore(BaseModel):
     role_alignment: int = Field(..., ge=0, le=100)
     formatting_score: int = Field(..., ge=0, le=100)
     section_completeness: int = Field(..., ge=0, le=100)
+    action_verb_score: Optional[int] = None
+    quantified_score: Optional[int] = None
+    faang_compliance: Optional[int] = None
     explanation: str
     missing_keywords: List[str]
     suggestions: List[str]

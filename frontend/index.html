@@ -1,186 +1,370 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Resume Builder - Create ATS-Friendly Resumes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .feature-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeWise AI – Smarter Resumes. Stronger Careers.</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Color Variables */
+      --navy: #1E3A4C;
+      --green: #2E7D52;
+      --green2: #3D9E68;
+      --gold: #E8B84B;
+      --bg: #F5F7F4;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: #1a1a2e; }
+    h1,h2,h3,h4 { font-family: 'Sora', sans-serif; }
+
+    /* ── Nav ─────────────────────────────── */
+    .nav-link { position:relative; transition:color .2s; }
+    .nav-link::after { content:''; position:absolute; bottom:-4px; left:0; width:0; height:2px; background:var(--green); transition:width .3s; }
+    .nav-link:hover::after { width:100%; }
+    .nav-link:hover { color:var(--green); }
+
+    /* ── Hero (FIXED FOR VISIBILITY) ── */
+    .hero-bg {
+      background-color: #F5F7F4;
+      /* FIX: Changed to Light Gradient to match your screenshot */
+      background: linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero-bg::before {
+      content:''; position:absolute; inset:0;
+      background: radial-gradient(ellipse at 70% 50%, rgba(46,125,82,.05) 0%, transparent 60%);
+    }
+    .hero-grid {
+      /* FIX: Dark grid lines for light background */
+      background-image: linear-gradient(rgba(0,0,0,.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,0,0,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    /* FIX: Removed heavy text shadow, added soft one */
+    .hero-text-shadow {
+      text-shadow: none;
+    }
+
+    /* ── Badge pill ──────────────────────── */
+    .badge { display:inline-flex; align-items:center; gap:6px; background:rgba(46,125,82,.1); border:1px solid rgba(46,125,82,.2); color:var(--green); border-radius:999px; padding:5px 14px; font-size:.78rem; font-weight:600; }
+
+    /* ── CTA Buttons ─────────────────────── */
+    .btn-primary { background:linear-gradient(135deg, var(--green) 0%, var(--green2) 100%); color:#fff; border-radius:10px; font-weight:700; transition:all .25s; box-shadow:0 4px 20px rgba(46,125,82,.3); }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(46,125,82,.4); }
+    
+    /* FIX: Updated Outline Button for Light Background */
+    .btn-outline { border:2px solid #e2e8f0; color:var(--navy); border-radius:10px; font-weight:600; transition:all .25s; background:white; }
+    .btn-outline:hover { border-color:var(--green2); color:var(--green); transform:translateY(-2px); }
+
+    /* ── Feature cards ───────────────────── */
+    .feat-card { background:#fff; border:1px solid #e4eae6; border-radius:16px; transition:all .3s; }
+    .feat-card:hover { transform:translateY(-6px); box-shadow:0 20px 50px rgba(30,58,76,.08); border-color:var(--green2); }
+    .feat-icon { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+
+    /* ── Step numbers ────────────────────── */
+    .step-num { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Sora',sans-serif; font-weight:800; font-size:1.3rem; background:linear-gradient(135deg, var(--green) 0%, var(--green2) 100%); color:#fff; box-shadow:0 4px 20px rgba(46,125,82,.35); margin:0 auto 1rem; }
+
+    /* ── Score pill strip ────────────────── */
+    .score-strip { background:var(--navy); }
+
+    /* ── Footer ──────────────────────────── */
+    .footer-bg { background: var(--navy); }
+
+    /* ── Floating resume mockup ──────────── */
+    .mockup { background:#fff; border-radius:16px; box-shadow:0 30px 60px rgba(30,58,76,.15); border:1px solid rgba(0,0,0,.05); }
+    .mockup-line { height:8px; border-radius:4px; }
+    .mockup-line-sm { height:6px; border-radius:3px; }
+
+    /* ── Testimonial ─────────────────────── */
+    .tcard { background:#fff; border:1px solid #e4eae6; border-radius:16px; }
+
+    /* ── Stats ───────────────────────────── */
+    .stat-val { font-family:'Sora',sans-serif; font-weight:800; font-size:2.8rem; color:var(--green); }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  </style>
 </head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-indigo-600">AI Resume Builder</h1>
-                </div>
-                <div class="flex space-x-4">
-                    <a href="/" class="text-gray-700 hover:text-indigo-600 px-3 py-2 font-medium">Home</a>
-                    <a href="/pages/resume-builder.html" class="text-gray-700 hover:text-indigo-600 px-3 py-2 font-medium">Resume Builder</a>
-                    <a href="/pages/ats-checker.html" class="text-gray-700 hover:text-indigo-600 px-3 py-2 font-medium">ATS Checker</a>
-                </div>
-            </div>
+<body>
+
+<nav class="bg-white/90 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm">
+  <div class="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
+    <a href="/" class="flex items-center gap-3">
+      <div class="bg-slate-100 p-1 rounded-lg">
+        <img src="/static/images/ResumeWise - logo.png" alt="ResumeWise AI" class="h-9 w-auto" />
+      </div>
+      <div>
+        <span class="font-bold text-lg" style="font-family:'Sora',sans-serif; color:var(--navy);">ResumeWise</span><span class="font-bold text-lg" style="color:var(--green)"> AI</span>
+      </div>
+    </a>
+    <div class="hidden md:flex items-center gap-6">
+      <a href="/" class="nav-link text-sm font-medium text-gray-600">Home</a>
+      <a href="/pages/resume-builder.html" class="nav-link text-sm font-medium text-gray-600">Resume Builder</a>
+      <a href="/pages/ats-checker.html" class="nav-link text-sm font-medium text-gray-600">ATS Checker</a>
+    </div>
+    <a href="/pages/resume-builder.html" class="btn-primary px-5 py-2 text-sm hidden md:inline-flex items-center gap-2">
+      Build Resume →
+    </a>
+  </div>
+</nav>
+
+<section class="hero-bg hero-grid py-28 px-6">
+  <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center relative z-10">
+
+    <div>
+      <div class="badge mb-6">✦ AI-Powered · Industry Grade ATS Scoring</div>
+      <h1 class="text-5xl lg:text-6xl font-extrabold leading-tight mb-5 hero-text-shadow text-gray-900">
+        Smarter Resumes.<br/><span style="color:#2E7D52">Stronger Careers.</span>
+      </h1>
+      <p class="text-lg text-slate-600 leading-relaxed mb-10 max-w-lg">
+        Build ATS-optimized resumes using real Gemini AI — your facts, polished to perfection. Score against FAANG standards in seconds.
+      </p>
+      <div class="flex flex-wrap gap-4">
+        <a href="/pages/resume-builder.html" class="btn-primary px-8 py-3.5 text-base inline-flex items-center gap-2">
+          ✨ Build My Resume
+        </a>
+        <a href="/pages/ats-checker.html" class="btn-outline px-8 py-3.5 text-base inline-flex items-center gap-2">
+          📊 Check ATS Score
+        </a>
+      </div>
+      <div class="mt-10 flex items-center gap-6 text-sm text-slate-500 font-medium">
+        <span class="flex items-center gap-1.5"><span style="color:var(--green)">✓</span> Free to use</span>
+        <span class="flex items-center gap-1.5"><span style="color:var(--green)">✓</span> No signup needed</span>
+        <span class="flex items-center gap-1.5"><span style="color:var(--green)">✓</span> PDF &amp; DOCX export</span>
+      </div>
+    </div>
+
+    <div class="hidden lg:block relative">
+      <div class="mockup p-8 ml-8" style="animation:float 5s ease-in-out infinite;">
+        <div class="text-center mb-4">
+          <div class="mockup-line w-40 mx-auto mb-2" style="background:var(--navy)"></div>
+          <div class="mockup-line-sm w-56 mx-auto" style="background:#e2e8f0"></div>
         </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="gradient-bg text-white py-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 class="text-5xl font-bold mb-6">Create Your Perfect Resume</h2>
-            <p class="text-xl mb-8 text-indigo-100 max-w-3xl mx-auto">
-                AI-powered resume builder that creates ATS-friendly, professional resumes optimized for applicant tracking systems
-            </p>
-            <div class="flex justify-center space-x-4">
-                <a href="/pages/resume-builder.html" class="bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-indigo-50 transition duration-300 shadow-lg">
-                    Build Resume Now
-                </a>
-                <a href="/pages/ats-checker.html" class="bg-indigo-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-indigo-400 transition duration-300 shadow-lg">
-                    Check ATS Score
-                </a>
-            </div>
+        <div class="space-y-3">
+          <div class="mockup-line w-28 mt-4" style="background:var(--green); opacity:.7"></div>
+          <div class="mockup-line-sm w-full" style="background:#f1f5f9"></div>
+          <div class="mockup-line-sm w-5/6" style="background:#f1f5f9"></div>
+          <div class="mockup-line w-32 mt-3" style="background:var(--green); opacity:.7"></div>
+          <div class="mockup-line-sm w-full" style="background:#f1f5f9"></div>
+          <div class="mockup-line-sm w-4/6" style="background:#f1f5f9"></div>
+          <div class="mockup-line-sm w-5/6" style="background:#f1f5f9"></div>
+          <div class="mockup-line w-32 mt-3" style="background:var(--green); opacity:.7"></div>
+          <div class="mockup-line-sm w-full" style="background:#f1f5f9"></div>
+          <div class="mockup-line-sm w-3/4" style="background:#f1f5f9"></div>
         </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h3 class="text-4xl font-bold text-gray-900 mb-4">Why Choose Our Resume Builder?</h3>
-                <p class="text-xl text-gray-600">Professional, ATS-optimized resumes powered by AI</p>
-            </div>
-            
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- Feature 1 -->
-                <div class="feature-card bg-gray-50 p-8 rounded-xl border border-gray-200">
-                    <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2 text-gray-900">AI-Powered Generation</h4>
-                    <p class="text-gray-600">Advanced Gemini AI creates professional content tailored to your target role</p>
-                </div>
-
-                <!-- Feature 2 -->
-                <div class="feature-card bg-gray-50 p-8 rounded-xl border border-gray-200">
-                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2 text-gray-900">ATS Optimization</h4>
-                    <p class="text-gray-600">Get detailed ATS scores with actionable suggestions to improve your resume</p>
-                </div>
-
-                <!-- Feature 3 -->
-                <div class="feature-card bg-gray-50 p-8 rounded-xl border border-gray-200">
-                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2 text-gray-900">Professional Templates</h4>
-                    <p class="text-gray-600">Choose from multiple clean, ATS-friendly templates designed by experts</p>
-                </div>
-
-                <!-- Feature 4 -->
-                <div class="feature-card bg-gray-50 p-8 rounded-xl border border-gray-200">
-                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2 text-gray-900">Easy Editing</h4>
-                    <p class="text-gray-600">Edit your resume like a word processor before downloading</p>
-                </div>
-
-                <!-- Feature 5 -->
-                <div class="feature-card bg-gray-50 p-8 rounded-xl border border-gray-200">
-                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2 text-gray-900">Multiple Formats</h4>
-                    <p class="text-gray-600">Download your resume as PDF or editable DOCX format</p>
-                </div>
-
-                <!-- Feature 6 -->
-                <div class="feature-card bg-gray-50 p-8 rounded-xl border border-gray-200">
-                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold mb-2 text-gray-900">Instant Results</h4>
-                    <p class="text-gray-600">Generate professional resumes in seconds with AI assistance</p>
-                </div>
-            </div>
+        <div class="absolute -top-4 -right-6 bg-white rounded-xl shadow-xl px-5 py-3 border border-green-100">
+          <div class="text-xs text-gray-500 font-medium text-black">ATS Score</div>
+          <div class="text-2xl font-extrabold" style="color:var(--green); font-family:'Sora',sans-serif;">92/100</div>
+          <div class="text-xs text-green-500 font-semibold">FAANG Ready ✓</div>
         </div>
-    </section>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- How It Works -->
-    <section class="py-20 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h3 class="text-4xl font-bold text-gray-900 mb-4">How It Works</h3>
-                <p class="text-xl text-gray-600">Simple 3-step process to create your perfect resume</p>
-            </div>
-            
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">1</div>
-                    <h4 class="text-xl font-semibold mb-2">Enter Your Details</h4>
-                    <p class="text-gray-600">Provide your basic information and upload existing resume (optional)</p>
-                </div>
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">2</div>
-                    <h4 class="text-xl font-semibold mb-2">AI Generates Content</h4>
-                    <p class="text-gray-600">Our AI creates optimized content aligned with your target role</p>
-                </div>
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">3</div>
-                    <h4 class="text-xl font-semibold mb-2">Download & Apply</h4>
-                    <p class="text-gray-600">Edit, download as PDF/DOCX and start applying to jobs</p>
-                </div>
-            </div>
-        </div>
-    </section>
+<section class="score-strip text-white py-14">
+  <div class="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+    <div><div class="stat-val">3</div><div class="text-slate-400 text-sm mt-1">Distinct Templates</div></div>
+    <div><div class="stat-val">7+</div><div class="text-slate-400 text-sm mt-1">Resume Sections</div></div>
+    <div><div class="stat-val">AI</div><div class="text-slate-400 text-sm mt-1">Powered Scoring</div></div>
+    <div><div class="stat-val">0</div><div class="text-slate-400 text-sm mt-1">Fake Data Generated</div></div>
+  </div>
+</section>
 
-    <!-- CTA Section -->
-    <section class="gradient-bg text-white py-20">
-        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-            <h3 class="text-4xl font-bold mb-6">Ready to Build Your Resume?</h3>
-            <p class="text-xl mb-8 text-indigo-100">Join thousands of job seekers who have successfully created ATS-friendly resumes</p>
-            <a href="/pages/resume-builder.html" class="bg-white text-indigo-600 px-10 py-4 rounded-lg font-semibold text-lg hover:bg-indigo-50 transition duration-300 shadow-lg inline-block">
-                Get Started Free
-            </a>
+<section class="py-24 px-6 bg-white">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center mb-16">
+      <div class="badge mx-auto mb-4" style="background:rgba(30,58,76,.08); border-color:rgba(30,58,76,.2); color:var(--navy);">Features</div>
+      <h2 class="text-4xl font-extrabold text-gray-900 mb-4">Everything you need to land the job</h2>
+      <p class="text-xl text-gray-500 max-w-2xl mx-auto">Built for freshers, and seasoned professionals alike.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-7">
+      <div class="feat-card p-8">
+        <div class="feat-icon mb-5" style="background:rgba(46,125,82,.1)">
+          <svg class="w-6 h-6" fill="none" stroke-width="2" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--green)"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
         </div>
-    </section>
+        <h4 class="text-lg font-bold text-gray-900 mb-2">Gemini AI Polishing</h4>
+        <p class="text-gray-500 text-sm leading-relaxed">Your real data, polished with action verbs and impact language — never hallucinated facts.</p>
+      </div>
+      <div class="feat-card p-8">
+        <div class="feat-icon mb-5" style="background:rgba(30,58,76,.1)">
+          <svg class="w-6 h-6" fill="none" stroke-width="2" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--navy)"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h4 class="text-lg font-bold text-gray-900 mb-2">FAANG-Grade ATS Scoring</h4>
+        <p class="text-gray-500 text-sm leading-relaxed">8-component ATS analysis aligned with Google, Meta, Amazon parsing algorithms.</p>
+      </div>
+      <div class="feat-card p-8">
+        <div class="feat-icon mb-5" style="background:rgba(232,184,75,.12)">
+          <svg class="w-6 h-6" fill="none" stroke-width="2" stroke="currentColor" viewBox="0 0 24 24" style="color:#C9941A"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <h4 class="text-lg font-bold text-gray-900 mb-2">3 Distinct Templates</h4>
+        <p class="text-gray-500 text-sm leading-relaxed">Professional, Modern (FAANG), and Classic — each visually and structurally different.</p>
+      </div>
+      <div class="feat-card p-8">
+        <div class="feat-icon mb-5" style="background:rgba(99,102,241,.1)">
+          <svg class="w-6 h-6" fill="none" stroke-width="2" stroke="currentColor" viewBox="0 0 24 24" style="color:#6366F1"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        </div>
+        <h4 class="text-lg font-bold text-gray-900 mb-2">Live Editable Preview</h4>
+        <p class="text-gray-500 text-sm leading-relaxed">Click any section in the preview to edit it inline — like a word processor.</p>
+      </div>
+      <div class="feat-card p-8">
+        <div class="feat-icon mb-5" style="background:rgba(239,68,68,.1)">
+          <svg class="w-6 h-6" fill="none" stroke-width="2" stroke="currentColor" viewBox="0 0 24 24" style="color:#EF4444"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <h4 class="text-lg font-bold text-gray-900 mb-2">PDF &amp; DOCX Export</h4>
+        <p class="text-gray-500 text-sm leading-relaxed">Download as ATS-optimized PDF or editable Word document instantly.</p>
+      </div>
+      <div class="feat-card p-8">
+        <div class="feat-icon mb-5" style="background:rgba(16,185,129,.1)">
+          <svg class="w-6 h-6" fill="none" stroke-width="2" stroke="currentColor" viewBox="0 0 24 24" style="color:#10B981"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        </div>
+        <h4 class="text-lg font-bold text-gray-900 mb-2">Upload &amp; Improve</h4>
+        <p class="text-gray-500 text-sm leading-relaxed">Upload an existing PDF/DOCX resume — AI extracts facts and rewrites it better.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-300 py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-lg mb-2">AI Resume Builder - Sophyra Platform</p>
-            <p class="text-sm text-gray-400">Production-grade ATS-friendly resume creation system</p>
-            <p class="text-sm text-gray-500 mt-4">&copy; 2024 All rights reserved</p>
+<section class="py-24 px-6" style="background:var(--bg)">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-4xl font-extrabold text-gray-900 mb-3">How It Works</h2>
+      <p class="text-xl text-gray-500">5 steps to a job-winning resume</p>
+    </div>
+    <div class="grid md:grid-cols-5 gap-6">
+      <div class="text-center">
+        <div class="step-num">1</div>
+        <h4 class="font-bold text-gray-800 text-sm">Basic Info</h4>
+        <p class="text-gray-500 text-xs mt-1">Name, role, contact details</p>
+      </div>
+      <div class="text-center">
+        <div class="step-num">2</div>
+        <h4 class="font-bold text-gray-800 text-sm">Your Skills</h4>
+        <p class="text-gray-500 text-xs mt-1">Tag your tech &amp; soft skills</p>
+      </div>
+      <div class="text-center">
+        <div class="step-num">3</div>
+        <h4 class="font-bold text-gray-800 text-sm">Experience</h4>
+        <p class="text-gray-500 text-xs mt-1">Real jobs &amp; bullet points</p>
+      </div>
+      <div class="text-center">
+        <div class="step-num">4</div>
+        <h4 class="font-bold text-gray-800 text-sm">Education</h4>
+        <p class="text-gray-500 text-xs mt-1">Degrees &amp; institutions</p>
+      </div>
+      <div class="text-center">
+        <div class="step-num">5</div>
+        <h4 class="font-bold text-gray-800 text-sm">AI Polish</h4>
+        <p class="text-gray-500 text-xs mt-1">Generate &amp; download</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="py-24 px-6 bg-white">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-14">
+      <h2 class="text-4xl font-extrabold text-gray-900 mb-3">Three Distinct Templates</h2>
+      <p class="text-xl text-gray-500">Each template has a completely different look, font, and layout style</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-green-400 transition-all hover:-translate-y-1 shadow-sm hover:shadow-xl">
+        <div class="p-6 bg-gray-50 border-b">
+          <div class="text-center">
+            <div class="h-4 w-28 mx-auto rounded bg-gray-800 mb-2"></div>
+            <div class="h-2 w-40 mx-auto rounded bg-gray-400"></div>
+          </div>
+          <div class="mt-4 space-y-2">
+            <div class="h-3 w-24 rounded bg-gray-700"></div>
+            <div class="h-2 w-full rounded bg-gray-200"></div>
+            <div class="h-2 w-5/6 rounded bg-gray-200"></div>
+            <div class="h-3 w-20 rounded bg-gray-700 mt-2"></div>
+            <div class="h-2 w-full rounded bg-gray-200"></div>
+          </div>
         </div>
-    </footer>
+        <div class="p-4 bg-white text-center">
+          <div class="font-bold text-gray-900">Professional</div>
+          <div class="text-xs text-gray-500 mt-1">Helvetica · Centered · Classic Black</div>
+          <div class="mt-2 inline-block px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">MNCs · Corporate</div>
+        </div>
+      </div>
+      <div class="rounded-2xl overflow-hidden border-2 border-green-400 shadow-xl hover:-translate-y-1 transition-all">
+        <div class="absolute -mt-3 w-full flex justify-center"><span class="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">Most Popular</span></div>
+        <div class="p-6 border-b" style="background:#5b8970">
+          <div class="text-left">
+            <div class="h-5 w-32 rounded mb-1" style="background:var(--navy)"></div>
+            <div class="h-1 w-full rounded my-2" style="background:var(--green)"></div>
+            <div class="h-2 w-44 rounded bg-gray-400"></div>
+          </div>
+          <div class="mt-4 space-y-2">
+            <div class="h-2 w-20 rounded" style="background:var(--green)"></div>
+            <div class="h-2 w-full rounded bg-gray-200"></div>
+            <div class="h-2 w-4/5 rounded bg-gray-200"></div>
+            <div class="h-2 w-20 rounded mt-2" style="background:var(--green)"></div>
+            <div class="h-2 w-full rounded bg-gray-200"></div>
+          </div>
+        </div>
+        <div class="p-4 bg-white text-center">
+          <div class="font-bold text-gray-900">Modern</div>
+          <div class="text-xs text-gray-500 mt-1">Left-aligned · Green accent · Metric-heavy</div>
+          <div class="mt-2 inline-block px-3 py-1 rounded-full text-xs font-semibold" style="background:rgba(46,125,82,.1); color:var(--green)">FAANG · Startups</div>
+        </div>
+      </div>
+      <div class="rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-yellow-400 transition-all hover:-translate-y-1 shadow-sm hover:shadow-xl">
+        <div class="p-6 bg-amber-50 border-b">
+          <div class="text-center">
+            <div class="h-4 w-28 mx-auto rounded bg-gray-900 mb-2" style="font-family:serif"></div>
+            <div class="h-px w-full bg-gray-800 my-2"></div>
+            <div class="h-2 w-40 mx-auto rounded bg-gray-400"></div>
+          </div>
+          <div class="mt-4 space-y-2">
+            <div class="h-3 w-28 rounded bg-gray-800"></div>
+            <div class="h-px bg-gray-300 my-1"></div>
+            <div class="h-2 w-full rounded bg-gray-200"></div>
+            <div class="h-2 w-3/4 rounded bg-gray-200"></div>
+          </div>
+        </div>
+        <div class="p-4 bg-white text-center">
+          <div class="font-bold text-gray-900">Classic</div>
+          <div class="text-xs text-gray-500 mt-1">Times New Roman · Serif · Traditional</div>
+          <div class="mt-2 inline-block px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Finance · Government</div>
+        </div>
+      </div>
+    </div>
+    <div class="text-center mt-10">
+      <a href="/pages/resume-builder.html" class="btn-primary inline-flex items-center gap-2 px-8 py-3.5 text-base">
+        Try All Templates →
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="hero-bg py-24 px-6 relative overflow-hidden">
+  <div class="max-w-3xl mx-auto text-center relative z-10">
+    <h2 class="text-4xl font-extrabold mb-5 text-gray-900">Ready to build your perfect resume?</h2>
+    <p class="text-lg text-slate-600 mb-10">Join professionals who've landed roles at Google, Amazon, Infosys and more.</p>
+    <a href="/pages/resume-builder.html" class="btn-primary inline-flex items-center gap-2 px-10 py-4 text-lg">
+      ✨ Get Started Free
+    </a>
+  </div>
+</section>
+
+<footer class="footer-bg text-slate-400 py-14 px-6">
+  <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+    <div class="flex items-center gap-3">
+      <img src="/static/images/ResumeWise - logo.png" alt="ResumeWise AI" class="h-8 w-auto brightness-0 invert opacity-90" />
+      <div>
+        <span class="text-white font-bold" style="font-family:'Sora',sans-serif">ResumeWise AI</span>
+        <p class="text-xs mt-0.5">Smarter Resumes. Stronger Careers.</p>
+      </div>
+    </div>
+    <div class="flex gap-8 text-sm text-slate-300">
+      <a href="/" class="hover:text-white transition">Home</a>
+      <a href="/pages/resume-builder.html" class="hover:text-white transition">Resume Builder</a>
+      <a href="/pages/ats-checker.html" class="hover:text-white transition">ATS Checker</a>
+    </div>
+    <p class="text-xs">© 2026 ResumeWise AI - Created by Krithika </p>
+  </div>
+</footer>
+
 </body>
 </html>

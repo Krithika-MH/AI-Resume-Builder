@@ -3,71 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resume Builder – AI Resume Builder</title>
+  <title>Resume Builder – ResumeWise AI</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: '#1E3A4C',
+            green: '#2E7D52',
+            green2: '#3D9E68',
+            'navy-light': '#2c526b',
+            'green-light': '#ebf5f0'
+          }
+        }
+      }
+    }
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  
   <style>
-    body { font-family: 'Inter', sans-serif; background: #f8fafc; }
+    body { font-family: 'Inter', sans-serif; background: #F5F7F4; }
+    :root { --navy:#1E3A4C; --green:#2E7D52; --green2:#3D9E68; }
 
     /* Step wizard */
     .step { display: none; }
     .step.active { display: block; }
 
     .step-dot { width:2.2rem; height:2.2rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; transition:all .3s; }
-    .step-dot.done   { background:#4f46e5; color:#fff; }
-    .step-dot.active { background:#4f46e5; color:#fff; box-shadow:0 0 0 4px #c7d2fe; }
+    
+    /* UPDATED COLORS TO MATCH BRAND */
+    .step-dot.done   { background:var(--green); color:#fff; }
+    .step-dot.active { background:var(--navy); color:#fff; box-shadow:0 0 0 4px #cbd5e1; }
     .step-dot.pending{ background:#e5e7eb; color:#9ca3af; }
 
     /* Resume preview styles */
     #resumePreview { font-family: 'Calibri', Arial, sans-serif; font-size:14px; color:#111; }
-    .r-name  { font-size:22px; font-weight:700; text-align:center; }
+    .r-name  { font-size:22px; font-weight:700; text-align:center; color: var(--navy); }
     .r-contact { text-align:center; color:#555; font-size:12px; margin-bottom:10px; }
     .r-section-title {
       font-size:13px; font-weight:700; text-transform:uppercase;
-      letter-spacing:.06em; color:#2c3e50;
-      border-bottom:2px solid #2c3e50;
+      letter-spacing:.06em; color:var(--navy);
+      border-bottom:2px solid var(--navy);
       margin:14px 0 6px; padding-bottom:3px;
     }
     .r-job-title { font-weight:700; font-size:13px; }
     .r-sub  { color:#555; font-size:12px; font-style:italic; margin-bottom:4px; }
     .r-bullet { font-size:12px; margin-left:14px; margin-bottom:2px; }
-    .r-bullet::before { content:"• "; font-weight:700; }
+    .r-bullet::before { content:"• "; font-weight:700; color: var(--green); }
     .r-skills { font-size:12px; }
-    [contenteditable]:focus { outline:2px solid #c7d2fe; border-radius:3px; background:#f5f3ff; }
+    [contenteditable]:focus { outline:2px solid var(--green2); border-radius:3px; background:#f0fdf4; }
 
-    /* Tag chips for skills */
+    /* Font picker */
+    .font-btn { border:2px solid #e5e7eb; border-radius:8px; padding:6px 14px; cursor:pointer; font-size:13px; transition:all .2s; }
+    .font-btn.active { border-color:var(--green); background:rgba(46,125,82,.08); color:var(--green); font-weight:600; }
+    
+    /* Template pill */
+    .tpl-btn { border:2px solid #e5e7eb; border-radius:10px; padding:8px 18px; cursor:pointer; font-size:13px; font-weight:600; transition:all .2s; }
+    .tpl-btn.active { border-color:var(--green); background:rgba(46,125,82,.1); color:var(--green); }
+    
+    /* Skill Chip Colors Updated */
     .skill-chip {
       display:inline-flex; align-items:center; gap:4px;
-      background:#e0e7ff; color:#3730a3; font-size:12px;
+      background:#ecfdf5; color:var(--navy); border: 1px solid #d1fae5; font-size:12px;
       padding:3px 10px; border-radius:20px; margin:3px;
     }
-    .skill-chip button { background:none; border:none; cursor:pointer; color:#6366f1; font-size:14px; line-height:1; padding:0; }
+    .skill-chip button { background:none; border:none; cursor:pointer; color:var(--green); font-size:14px; line-height:1; padding:0; }
   </style>
 </head>
 <body>
 
-<!-- ───────────────── NAV ───────────────── -->
-<nav class="bg-white shadow-sm sticky top-0 z-50">
+<nav class="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 shadow-sm">
   <div class="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
-    <a href="/" class="text-2xl font-bold text-indigo-600">AI Resume Builder</a>
-    <div class="flex gap-2 text-sm font-medium">
-      <a href="/"       class="px-3 py-2 text-gray-600 hover:text-indigo-600">Home</a>
-      <a href="/pages/resume-builder.html" class="px-3 py-2 text-indigo-600 border-b-2 border-indigo-600">Builder</a>
-      <a href="/pages/ats-checker.html"    class="px-3 py-2 text-gray-600 hover:text-indigo-600">ATS Checker</a>
+    <a href="/" class="flex items-center gap-3">
+      <img src="/static/images/ResumeWise - logo.png" alt="ResumeWise AI" class="h-9 w-auto" />
+      <div>
+        <span class="font-bold text-lg" style="font-family:'Sora',sans-serif; color:var(--navy);">ResumeWise</span><span class="font-bold text-lg" style="color:var(--green)"> AI</span>
+      </div>
+    </a>
+    <div class="flex gap-6 text-sm font-medium">
+      <a href="/"        class="text-gray-600 hover:text-green">Home</a>
+      <a href="/pages/resume-builder.html" class="font-bold text-green">Resume Builder</a>
+      <a href="/pages/ats-checker.html"    class="text-gray-600 hover:text-green">ATS Checker</a>
     </div>
   </div>
 </nav>
 
-<!-- ───────────────── MAIN ───────────────── -->
 <div class="max-w-7xl mx-auto px-4 py-8">
 
-  <!-- Upload-or-Fill toggle -->
   <div class="bg-white rounded-xl shadow p-6 mb-6">
     <h2 class="text-2xl font-bold text-gray-900 mb-2">Build Your Resume</h2>
     <p class="text-gray-500 mb-5">Choose how you want to start:</p>
     <div class="flex gap-4 flex-wrap">
       <button id="btnManual" onclick="setMode('manual')"
-        class="flex-1 min-w-[200px] border-2 border-indigo-600 text-indigo-600 rounded-xl py-4 font-semibold hover:bg-indigo-50 transition">
+        class="flex-1 min-w-[200px] border-2 border-navy text-navy rounded-xl py-4 font-semibold hover:bg-slate-50 transition">
         ✏️ Fill in my details manually
       </button>
       <button id="btnUpload" onclick="setMode('upload')"
@@ -76,9 +108,8 @@
       </button>
     </div>
 
-    <!-- Upload panel -->
     <div id="uploadPanel" class="hidden mt-5 space-y-4">
-      <div class="border-2 border-dashed border-indigo-300 rounded-xl p-8 text-center">
+      <div class="border-2 border-dashed border-green2/30 bg-green-light/30 rounded-xl p-8 text-center">
         <input type="file" id="resumeUpload" accept=".pdf,.docx" class="hidden" onchange="handleUpload(this)" />
         <label for="resumeUpload" class="cursor-pointer">
           <div class="text-5xl mb-3">📎</div>
@@ -86,44 +117,43 @@
           <p class="text-sm text-gray-400 mt-1">Max 10 MB</p>
         </label>
       </div>
-      <!-- Still ask for role / JD even when uploading -->
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Target Job Role *</label>
           <input id="uTargetRole" type="text" placeholder="e.g. Software Engineer"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Job Description (optional)</label>
           <textarea id="uJobDesc" rows="2" placeholder="Paste job description for better ATS alignment…"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400"></textarea>
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green"></textarea>
         </div>
       </div>
       <div class="grid md:grid-cols-3 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
           <input id="uFullName" type="text" placeholder="John Doe"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
           <input id="uPhone" type="text" placeholder="+91 98765 43210"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
           <input id="uEmail" type="email" placeholder="john@email.com"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
       </div>
       <div class="flex gap-3">
-        <select id="uTemplate" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400">
+        <select id="uTemplate" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green">
           <option value="professional">Professional Template</option>
           <option value="modern">Modern Template</option>
           <option value="classic">Classic Template</option>
         </select>
         <button onclick="generateFromUpload()"
-          class="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-2" id="uploadGenBtn">
+          class="flex-1 bg-navy text-white py-2 rounded-lg font-semibold hover:bg-navy-light transition flex items-center justify-center gap-2" id="uploadGenBtn">
           <span id="uploadBtnTxt">✨ Generate from Upload</span>
           <span id="uploadSpinner" class="hidden"><svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg></span>
         </button>
@@ -131,14 +161,12 @@
     </div>
   </div>
 
-  <!-- ═══════════ MANUAL FORM ═══════════ -->
   <div id="manualForm">
 
-    <!-- Step indicator -->
     <div class="flex items-center justify-center gap-2 mb-8 flex-wrap">
       <div class="flex items-center gap-2" id="si_1">
         <div class="step-dot active" id="sd_1">1</div>
-        <span class="text-sm font-medium text-indigo-600">Basic Info</span>
+        <span class="text-sm font-medium text-navy">Basic Info</span>
       </div>
       <div class="h-px w-8 bg-gray-300"></div>
       <div class="flex items-center gap-2" id="si_2">
@@ -162,53 +190,52 @@
       </div>
     </div>
 
-    <!-- ────── STEP 1: BASIC INFO ────── -->
     <div class="step active bg-white rounded-xl shadow p-8" id="step1">
-      <h3 class="text-xl font-bold mb-6 text-gray-900">👤 Basic Information</h3>
+      <h3 class="text-xl font-bold mb-6 text-navy">👤 Basic Information</h3>
       <div class="grid md:grid-cols-2 gap-5">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
           <input id="s1_name" type="text" placeholder="e.g. Riya Sharma"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Target Job Role *</label>
           <input id="s1_role" type="text" placeholder="e.g. Data Analyst, SDE-2, Product Manager"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
           <input id="s1_phone" type="tel" placeholder="+91 98765 43210"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
           <input id="s1_email" type="email" placeholder="riya@example.com"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL (optional)</label>
           <input id="s1_linkedin" type="url" placeholder="https://linkedin.com/in/yourname"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">GitHub URL (optional)</label>
           <input id="s1_github" type="url" placeholder="https://github.com/yourhandle"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400" />
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green" />
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Professional Summary (optional – or let AI write it)</label>
           <textarea id="s1_summary" rows="3" placeholder="Leave blank to let AI craft your summary, or write your own…"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400"></textarea>
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green"></textarea>
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-1">Job Description to align with (optional)</label>
           <textarea id="s1_jd" rows="3" placeholder="Paste the job description here for keyword alignment and ATS optimization…"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400"></textarea>
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green"></textarea>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Resume Template</label>
-          <select id="s1_template" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400">
+          <select id="s1_template" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green">
             <option value="professional">Professional</option>
             <option value="modern">Modern</option>
             <option value="classic">Classic</option>
@@ -216,40 +243,38 @@
         </div>
       </div>
       <div class="flex justify-end mt-6">
-        <button onclick="nextStep(1)" class="bg-indigo-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition">Next →</button>
+        <button onclick="nextStep(1)" class="bg-green text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-green2 transition">Next →</button>
       </div>
     </div>
 
-    <!-- ────── STEP 2: SKILLS ────── -->
     <div class="step bg-white rounded-xl shadow p-8" id="step2">
-      <h3 class="text-xl font-bold mb-2 text-gray-900">🛠️ Skills</h3>
+      <h3 class="text-xl font-bold mb-2 text-navy">🛠️ Skills</h3>
       <p class="text-sm text-gray-500 mb-5">Type a skill and press <kbd class="bg-gray-100 border border-gray-300 rounded px-1 text-xs">Enter</kbd> or <kbd class="bg-gray-100 border border-gray-300 rounded px-1 text-xs">,</kbd> to add it.</p>
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Technical Skills</label>
         <div id="techSkillsContainer" class="min-h-[44px] border border-gray-300 rounded-lg p-2 flex flex-wrap gap-1 mb-1 cursor-text" onclick="document.getElementById('techSkillInput').focus()"></div>
         <input id="techSkillInput" type="text" placeholder="e.g. Python, React, SQL…" onkeydown="addSkill(event,'tech')"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 mt-1" />
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green mt-1" />
       </div>
 
       <div class="mt-5">
         <label class="block text-sm font-medium text-gray-700 mb-1">Soft Skills</label>
         <div id="softSkillsContainer" class="min-h-[44px] border border-gray-300 rounded-lg p-2 flex flex-wrap gap-1 mb-1 cursor-text" onclick="document.getElementById('softSkillInput').focus()"></div>
         <input id="softSkillInput" type="text" placeholder="e.g. Leadership, Communication…" onkeydown="addSkill(event,'soft')"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 mt-1" />
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green mt-1" />
       </div>
 
       <div class="flex justify-between mt-8">
         <button onclick="prevStep(2)" class="border border-gray-300 text-gray-600 px-6 py-2.5 rounded-lg hover:bg-gray-50 transition">← Back</button>
-        <button onclick="nextStep(2)" class="bg-indigo-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition">Next →</button>
+        <button onclick="nextStep(2)" class="bg-green text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-green2 transition">Next →</button>
       </div>
     </div>
 
-    <!-- ────── STEP 3: EXPERIENCE ────── -->
     <div class="step bg-white rounded-xl shadow p-8" id="step3">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-xl font-bold text-gray-900">💼 Work Experience</h3>
-        <button onclick="addExperienceBlock()" class="text-sm bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-100 transition">+ Add Position</button>
+        <h3 class="text-xl font-bold text-navy">💼 Work Experience</h3>
+        <button onclick="addExperienceBlock()" class="text-sm bg-green-light text-navy border border-green2 px-4 py-2 rounded-lg hover:bg-green/10 transition">+ Add Position</button>
       </div>
       <p class="text-sm text-gray-400 mb-4">Leave blank or click "Next" if you have no experience yet (for freshers).</p>
 
@@ -257,79 +282,72 @@
 
       <div class="flex justify-between mt-8">
         <button onclick="prevStep(3)" class="border border-gray-300 text-gray-600 px-6 py-2.5 rounded-lg hover:bg-gray-50 transition">← Back</button>
-        <button onclick="nextStep(3)" class="bg-indigo-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition">Next →</button>
+        <button onclick="nextStep(3)" class="bg-green text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-green2 transition">Next →</button>
       </div>
     </div>
 
-    <!-- ────── STEP 4: EDUCATION ────── -->
     <div class="step bg-white rounded-xl shadow p-8" id="step4">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-xl font-bold text-gray-900">🎓 Education</h3>
-        <button onclick="addEducationBlock()" class="text-sm bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-100 transition">+ Add Degree</button>
+        <h3 class="text-xl font-bold text-navy">🎓 Education</h3>
+        <button onclick="addEducationBlock()" class="text-sm bg-green-light text-navy border border-green2 px-4 py-2 rounded-lg hover:bg-green/10 transition">+ Add Degree</button>
       </div>
 
       <div id="educationBlocks" class="space-y-6"></div>
 
       <div class="flex justify-between mt-8">
         <button onclick="prevStep(4)" class="border border-gray-300 text-gray-600 px-6 py-2.5 rounded-lg hover:bg-gray-50 transition">← Back</button>
-        <button onclick="nextStep(4)" class="bg-indigo-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition">Next →</button>
+        <button onclick="nextStep(4)" class="bg-green text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-green2 transition">Next →</button>
       </div>
     </div>
 
-    <!-- ────── STEP 5: PROJECTS + CERTS + ACHIEVEMENTS ────── -->
     <div class="step bg-white rounded-xl shadow p-8" id="step5">
-      <h3 class="text-xl font-bold mb-6 text-gray-900">🚀 Projects, Certifications & Achievements</h3>
+      <h3 class="text-xl font-bold mb-6 text-navy">🚀 Projects, Certifications & Achievements</h3>
 
-      <!-- Projects -->
       <div class="mb-8">
         <div class="flex justify-between items-center mb-4">
           <h4 class="font-semibold text-gray-800">Projects</h4>
-          <button onclick="addProjectBlock()" class="text-sm bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-100 transition">+ Add Project</button>
+          <button onclick="addProjectBlock()" class="text-sm bg-green-light text-navy border border-green2 px-4 py-2 rounded-lg hover:bg-green/10 transition">+ Add Project</button>
         </div>
         <div id="projectBlocks" class="space-y-5"></div>
       </div>
 
-      <!-- Certifications -->
       <div class="mb-8">
         <label class="block text-sm font-semibold text-gray-800 mb-2">Certifications <span class="text-gray-400 font-normal">(one per line)</span></label>
         <textarea id="s5_certs" rows="4" placeholder="AWS Certified Solutions Architect&#10;Google Data Analytics Certificate&#10;Coursera Machine Learning"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400"></textarea>
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green"></textarea>
       </div>
 
-      <!-- Achievements -->
       <div class="mb-4">
         <label class="block text-sm font-semibold text-gray-800 mb-2">Achievements <span class="text-gray-400 font-normal">(one per line)</span></label>
         <textarea id="s5_achievements" rows="4" placeholder="Won Smart India Hackathon 2023&#10;Published research paper on NLP (IJCA, 2024)&#10;Ranked top 5% in LeetCode"
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400"></textarea>
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green"></textarea>
       </div>
 
       <div class="flex justify-between mt-8">
         <button onclick="prevStep(5)" class="border border-gray-300 text-gray-600 px-6 py-2.5 rounded-lg hover:bg-gray-50 transition">← Back</button>
         <button onclick="generateResume()"
-          class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-10 py-3 rounded-lg font-bold hover:from-indigo-700 hover:to-purple-700 transition flex items-center gap-2" id="genBtn">
+          class="bg-gradient-to-r from-navy to-green text-white px-10 py-3 rounded-lg font-bold hover:shadow-lg transition flex items-center gap-2" id="genBtn">
           <span id="genBtnTxt">✨ Generate Resume</span>
           <span id="genSpinner" class="hidden"><svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg></span>
         </button>
       </div>
     </div>
 
-  </div><!-- /manualForm -->
-
-  <!-- ═══════════ RESULT PANEL ═══════════ -->
+  </div>
+  
   <div id="resultPanel" class="hidden mt-8">
 
-    <!-- ATS Score banner -->
-    <div id="atsBanner" class="rounded-xl p-5 mb-6 border flex flex-wrap gap-6 items-center bg-indigo-50 border-indigo-200">
+    <div id="atsBanner" class="rounded-xl p-5 mb-6 border flex flex-wrap gap-6 items-center bg-green-light border-green2">
       <div class="text-center">
-        <div class="text-5xl font-black text-indigo-700" id="atsNum">--</div>
-        <div class="text-xs text-indigo-500 font-semibold mt-1">ATS SCORE / 100</div>
+        <div class="text-5xl font-black text-navy" id="atsNum">--</div>
+        <div class="text-xs text-green font-semibold mt-1">ATS SCORE / 100</div>
       </div>
       <div class="flex-1 min-w-[260px]">
         <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
           <span class="text-gray-500">Skill Match</span>     <span class="font-semibold text-gray-800" id="b_skill">--</span>
           <span class="text-gray-500">Keyword Relevance</span><span class="font-semibold text-gray-800" id="b_kw">--</span>
-          <span class="text-gray-500">Role Alignment</span>  <span class="font-semibold text-gray-800" id="b_role">--</span>
-          <span class="text-gray-500">Formatting</span>      <span class="font-semibold text-gray-800" id="b_fmt">--</span>
+          <span class="text-gray-500">Role Alignment</span>   <span class="font-semibold text-gray-800" id="b_role">--</span>
+          <span class="text-gray-500">Formatting</span>       <span class="font-semibold text-gray-800" id="b_fmt">--</span>
           <span class="text-gray-500">Section Complete</span><span class="font-semibold text-gray-800" id="b_sec">--</span>
         </div>
       </div>
@@ -339,22 +357,30 @@
       </div>
     </div>
 
-    <!-- Download + edit bar -->
-    <div class="flex flex-wrap gap-3 mb-4 items-center">
-      <span class="text-sm text-gray-500 font-medium">All text is editable — click any field to edit:</span>
-      <button onclick="downloadPDF()"  class="ml-auto bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">⬇ PDF</button>
-      <button onclick="downloadDOCX()" class="bg-blue-700 hover:bg-blue-800 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">⬇ DOCX</button>
+    <div class="flex flex-wrap gap-3 mb-4 items-start">
+      <div class="flex-1 min-w-[240px]">
+        <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Font Style</div>
+        <div class="flex gap-2 flex-wrap" id="fontPicker">
+          <button class="font-btn active" onclick="setFont('Calibri')"    style="font-family:Calibri">Calibri</button>
+          <button class="font-btn"        onclick="setFont('Georgia')"    style="font-family:Georgia">Georgia</button>
+          <button class="font-btn"        onclick="setFont('Arial')"      style="font-family:Arial">Arial</button>
+          <button class="font-btn"        onclick="setFont('Garamond')"   style="font-family:Garamond">Garamond</button>
+          <button class="font-btn"        onclick="setFont('Helvetica')"  style="font-family:Helvetica">Helvetica</button>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button onclick="downloadPDF()"  class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">⬇ PDF</button>
+        <button onclick="downloadDOCX()" class="bg-blue-700 hover:bg-blue-800 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">⬇ DOCX</button>
+      </div>
     </div>
+    <p class="text-xs text-gray-400 mb-4">💡 Click any text in the preview below to edit it inline</p>
 
-    <!-- Resume preview (editable) -->
     <div class="bg-white rounded-xl shadow-lg p-10 max-w-4xl mx-auto" id="resumePreview">
-      <!-- filled by JS -->
-    </div>
+      </div>
   </div>
 
-</div><!-- /max-w-7xl -->
+</div>
 
-<!-- toast -->
 <div id="toast" class="fixed top-4 right-4 px-5 py-3 rounded-lg shadow-lg text-white text-sm font-medium hidden z-[100]"></div>
 
 <script src="/static/js/resume-builder.js"></script>

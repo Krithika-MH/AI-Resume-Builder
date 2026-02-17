@@ -391,6 +391,14 @@ async function callGenerateAPI(fd) {
   }
 }
 
+// ── Font Picker ───────────────────────────────────────────
+function setFont(fontName) {
+  document.getElementById('resumePreview').style.fontFamily = fontName + ', sans-serif';
+  document.querySelectorAll('.font-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === fontName);
+  });
+}
+
 // ── Render resume preview ─────────────────────────────────
 function renderResume(rc) {
   const el = document.getElementById('resumePreview');
@@ -453,16 +461,18 @@ function renderResume(rc) {
     });
   }
 
-  // Certifications
-  if (rc.certifications?.length) {
+  // Certifications — always render if array has any items
+  const certs = rc.certifications || [];
+  if (certs.length > 0) {
     h += sec('CERTIFICATIONS');
-    rc.certifications.forEach(c => { h += `<div class="r-bullet" contenteditable="true">${esc(c)}</div>`; });
+    certs.forEach(c => { if (c && c.trim()) h += `<div class="r-bullet" contenteditable="true">${esc(c)}</div>`; });
   }
 
-  // Achievements
-  if (rc.achievements?.length) {
+  // Achievements — always render if array has any items
+  const achs = rc.achievements || [];
+  if (achs.length > 0) {
     h += sec('ACHIEVEMENTS');
-    rc.achievements.forEach(a => { h += `<div class="r-bullet" contenteditable="true">${esc(a)}</div>`; });
+    achs.forEach(a => { if (a && a.trim()) h += `<div class="r-bullet" contenteditable="true">${esc(a)}</div>`; });
   }
 
   el.innerHTML = h;

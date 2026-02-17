@@ -1,567 +1,391 @@
 """
-PDF Generation Service using ReportLab
-Creates professional, ATS-friendly PDF resumes
+PDF Generation Service – 3 visually distinct templates.
+Professional: Helvetica, centered header, thin dividers, black/grey.
+Modern (FAANG): Left-aligned, navy+green accent, impact-focused layout.
+Classic: Times New Roman, centered, full-width ruled dividers, serif.
 """
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_LEFT, TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable, KeepTogether
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, HRFlowable,
+    KeepTogether, Table, TableStyle
+)
 from reportlab.lib import colors
 from backend.app.models.schemas import ResumeContent
 from io import BytesIO
 from typing import List
 
 
+# ── Colour palette (matches logo) ─────────────────────────
+NAVY   = colors.HexColor('#1E3A4C')
+GREEN  = colors.HexColor('#2E7D52')
+GREEN2 = colors.HexColor('#3D9E68')
+GOLD   = colors.HexColor('#E8B84B')
+BLACK  = colors.HexColor('#111111')
+DGRAY  = colors.HexColor('#444444')
+LGRAY  = colors.HexColor('#888888')
+PALE   = colors.HexColor('#F0FDF4')
+
 
 class PDFGenerationService:
-    """Service for generating PDF resumes"""
-    
-    def __init__(self):
-        """Initialize PDF generation service"""
-        self.styles = getSampleStyleSheet()
-        self._setup_custom_styles()
-    
-    def _setup_custom_styles(self, template="professional"):
-        """Setup custom paragraph styles for resume"""
-        
-        # Reset styles to avoid inheritance pollution between runs
-        self.styles = getSampleStyleSheet()
 
-        # Title style (Name)
-        if template == "modern":
-            self.styles.add(ParagraphStyle(
-                name='ResumeName',
-                parent=self.styles['Heading1'],
-                fontSize=24,
-                textColor=colors.HexColor('#007acc'),   # Bright blue
-                spaceAfter=4,
-                alignment=TA_LEFT,
-                fontName='Helvetica-Bold'
-            ))
-            self.styles.add(ParagraphStyle(
-                name='SectionHeader',
-                parent=self.styles['Heading2'],
-                fontSize=11,
-                textColor=colors.HexColor('#007acc'),
-                spaceAfter=4,
-                spaceBefore=16,
-                fontName='Helvetica-Bold',
-                letterSpacing=1
-            ))
-            self.styles.add(ParagraphStyle(
-                name='ContactInfo',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                textColor=colors.HexColor('#333333'),
-                alignment=TA_LEFT,
-                fontName='Helvetica',
-                spaceAfter=12
-            ))
-            self.styles.add(ParagraphStyle(
-                name='ResumeBody',
-                parent=self.styles['Normal'],
-                fontSize=10.5,
-                textColor=colors.HexColor('#1a1a1a'),
-                spaceAfter=6,
-                leading=15,
-                fontName='Helvetica'
-            ))
-            self.styles.add(ParagraphStyle(
-                name='BulletPoint',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                textColor=colors.HexColor('#1a1a1a'),
-                leftIndent=20,
-                spaceAfter=4,
-                leading=13,
-                fontName='Helvetica',
-                bulletIndent=10
-            ))
-            self.styles.add(ParagraphStyle(
-                name='JobTitle',
-                parent=self.styles['Normal'],
-                fontSize=11,
-                textColor=colors.HexColor('#1a1a1a'),
-                fontName='Helvetica-Bold',
-                spaceAfter=2
-            ))
-            self.styles.add(ParagraphStyle(
-                name='CompanyName',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                textColor=colors.HexColor('#555555'),
-                fontName='Helvetica-Oblique',
-                spaceAfter=4
-            ))
-
-        elif template == "classic":
-            self.styles.add(ParagraphStyle(
-                name='ResumeName',
-                parent=self.styles['Heading1'],
-                fontSize=22,
-                textColor=colors.black,
-                spaceAfter=6,
-                alignment=TA_CENTER,
-                fontName='Times-Bold'
-            ))
-            self.styles.add(ParagraphStyle(
-                name='ResumeBody',
-                parent=self.styles['Normal'],
-                fontSize=11,
-                fontName='Times-Roman',
-                leading=14,
-                spaceAfter=6
-            ))
-            self.styles.add(ParagraphStyle(
-                name='SectionHeader',
-                parent=self.styles['Heading2'],
-                fontSize=12,
-                textColor=colors.black,
-                fontName='Times-Bold',
-                spaceBefore=10,
-                spaceAfter=6
-            ))
-            self.styles.add(ParagraphStyle(
-                name='JobTitle',
-                parent=self.styles['Normal'],
-                fontSize=11,
-                fontName='Times-Bold',
-                spaceAfter=2
-            ))
-            self.styles.add(ParagraphStyle(
-                name='CompanyName',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                fontName='Times-Italic',
-                spaceAfter=4
-            ))
-            self.styles.add(ParagraphStyle(
-                name='BulletPoint',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                fontName='Times-Roman',
-                leftIndent=18,
-                spaceAfter=4,
-                bulletIndent=10
-            ))
-            self.styles.add(ParagraphStyle(
-                name='ContactInfo',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                textColor=colors.black,
-                alignment=TA_CENTER,
-                fontName='Times-Roman',
-                spaceAfter=12
-            ))
-        else:  # professional
-            self.styles.add(ParagraphStyle(
-                name='ResumeName',
-                parent=self.styles['Heading1'],
-                fontSize=20,
-                textColor=colors.black,
-                spaceAfter=6,
-                alignment=TA_CENTER,
-                fontName='Helvetica-Bold'
-            ))
-            self.styles.add(ParagraphStyle(
-                name='SectionHeader',
-                parent=self.styles['Heading2'],
-                fontSize=12,
-                textColor=colors.black,
-                spaceAfter=6,
-                spaceBefore=10,
-                fontName='Helvetica-Bold'
-            ))
-            self.styles.add(ParagraphStyle(
-                name='ContactInfo',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                textColor=colors.HexColor('#333333'),
-                alignment=TA_CENTER,
-                fontName='Helvetica',
-                spaceAfter=12
-            ))
-            self.styles.add(ParagraphStyle(
-                name='ResumeBody',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                textColor=colors.black,
-                spaceAfter=6,
-                leading=14,
-                fontName='Helvetica'
-            ))
-            self.styles.add(ParagraphStyle(
-                name='BulletPoint',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                textColor=colors.black,
-                leftIndent=20,
-                spaceAfter=4,
-                leading=12,
-                fontName='Helvetica',
-                bulletIndent=10
-            ))
-            self.styles.add(ParagraphStyle(
-                name='JobTitle',
-                parent=self.styles['Normal'],
-                fontSize=11,
-                textColor=colors.black,
-                fontName='Helvetica-Bold',
-                spaceAfter=2
-            ))
-            self.styles.add(ParagraphStyle(
-                name='CompanyName',
-                parent=self.styles['Normal'],
-                fontSize=10,
-                textColor=colors.HexColor('#555555'),
-                fontName='Helvetica-Oblique',
-                spaceAfter=4
-            ))
-    
     def generate_pdf(self, resume_content: ResumeContent, template: str = "professional") -> BytesIO:
-        """
-        Generate PDF resume from content
-        
-        Args:
-            resume_content: Structured resume content
-            template: Template style to use
-            
-        Returns:
-            BytesIO object containing the PDF
-        """
-        # Reinitialize styles per template
-        self._setup_custom_styles(template)
-        
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=letter,
-            rightMargin=0.75*inch,
-            leftMargin=0.75*inch,
-            topMargin=0.75*inch,
-            bottomMargin=0.75*inch
-        )
-        
-        # Build content based on template
+        buf = BytesIO()
         if template == "modern":
-            story = self._build_modern_template(resume_content)
+            builder = ModernTemplate()
         elif template == "classic":
-            story = self._build_classic_template(resume_content)
-        else:  # professional (default)
-            story = self._build_professional_template(resume_content)
-        
-        # Build PDF
-        doc.build(story)
-        buffer.seek(0)
-        return buffer
-    
-    def _build_professional_template(self, content: ResumeContent) -> List:
-        """Build professional template layout"""
-        story = []
-        
-        # Header - Name
-        story.append(Paragraph(content.full_name, self.styles['ResumeName']))
-        
-        # Contact Information
-        contact_parts = []
-        if content.contact.phone:
-            contact_parts.append(content.contact.phone)
-        if content.contact.email:
-            contact_parts.append(content.contact.email)
-        if content.contact.linkedin:
-            contact_parts.append(content.contact.linkedin)
-        
-        contact_text = " | ".join(contact_parts)
-        story.append(Paragraph(contact_text, self.styles['ContactInfo']))
-        story.append(Spacer(1, 0.2*inch))
-        
-        # Professional Summary
-        if content.summary:
-            story.append(Paragraph("PROFESSIONAL SUMMARY", self.styles['SectionHeader']))
-            story.append(Paragraph(content.summary, self.styles['ResumeBody']))
-            story.append(Spacer(1, 0.15*inch))
-        
-        # Skills - Comma separated for ATS
-        if content.skills:
-            story.append(Paragraph("SKILLS", self.styles['SectionHeader']))
-            skills_text = ", ".join(content.skills)
-            story.append(Paragraph(skills_text, self.styles['ResumeBody']))
-            story.append(Spacer(1, 0.15*inch))
-        
-        # Experience
-        if content.experience:
-            story.append(Paragraph("PROFESSIONAL EXPERIENCE", self.styles['SectionHeader']))
-            for exp in content.experience:
-                block = []
-                # Job title and duration
-                title_text = f"<b>{exp.title}</b>"
-                block.append(Paragraph(title_text, self.styles['JobTitle']))
-                
-                # Company and location
-                company_text = f"{exp.company} | {exp.duration}"
-                if exp.location:
-                    company_text += f" | {exp.location}"
-                block.append(Paragraph(company_text, self.styles['CompanyName']))
-                
-                # Responsibilities - ATS optimized bullets
-                for resp in exp.responsibilities:
-                    block.append(Paragraph(resp, self.styles['BulletPoint'], bulletText="•"))
-                
-                block.append(Spacer(1, 0.1*inch))
-                story.append(KeepTogether(block))
-        
-        # Education
-        if content.education:
-            story.append(Paragraph("EDUCATION", self.styles['SectionHeader']))
-            for edu in content.education:
-                degree_text = f"<b>{edu.degree}</b>"
-                story.append(Paragraph(degree_text, self.styles['JobTitle']))
-                
-                institution_text = f"{edu.institution} | {edu.year}"
-                if edu.gpa:
-                    institution_text += f" | GPA: {edu.gpa}"
-                story.append(Paragraph(institution_text, self.styles['CompanyName']))
-                story.append(Spacer(1, 0.08*inch))
-        
-        # Projects
-        if content.projects:
-            story.append(Paragraph("PROJECTS", self.styles['SectionHeader']))
-            for proj in content.projects:
-                proj_name = f"<b>{proj.name}</b>"
-                story.append(Paragraph(proj_name, self.styles['JobTitle']))
-                
-                if proj.technologies:
-                    tech_text = f"Technologies: {proj.technologies}"
-                    story.append(Paragraph(tech_text, self.styles['CompanyName']))
-                
-                if proj.description:
-                    story.append(Paragraph(proj.description, self.styles['BulletPoint'], bulletText="•"))
-                
-                if proj.impact:
-                    story.append(Paragraph(proj.impact, self.styles['BulletPoint'], bulletText="•"))
-                
-                story.append(Spacer(1, 0.08*inch))
-        
-        # Certifications
-        if content.certifications:
-            story.append(Paragraph("CERTIFICATIONS", self.styles['SectionHeader']))
-            for cert in content.certifications:
-                story.append(Paragraph(cert, self.styles['BulletPoint'], bulletText="•"))
-            story.append(Spacer(1, 0.08*inch))
-        
-        # Achievements
-        if content.achievements:
-            story.append(Paragraph("ACHIEVEMENTS", self.styles['SectionHeader']))
-            for achievement in content.achievements:
-                story.append(Paragraph(achievement, self.styles['BulletPoint'], bulletText="•"))
-        
-        return story
-    
-    def _build_modern_template(self, content: ResumeContent) -> List:
-        """Build modern template with colored accents"""
-        story = []
-        
-        # Header - Name (Left aligned, bigger, colored)
-        story.append(Paragraph(content.full_name, self.styles['ResumeName']))
-        
-        # Thin accent line
-        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#007acc")))
-        story.append(Spacer(1, 0.2*inch))
-        
-        # Contact Information
-        contact_parts = []
-        if content.contact.phone:
-            contact_parts.append(content.contact.phone)
-        if content.contact.email:
-            contact_parts.append(content.contact.email)
-        if content.contact.linkedin:
-            contact_parts.append(content.contact.linkedin)
-        
-        contact_text = " | ".join(contact_parts)
-        story.append(Paragraph(contact_text, self.styles['ContactInfo']))
-        story.append(Spacer(1, 0.25*inch))
-        
-        # Professional Summary
-        if content.summary:
-            story.append(Paragraph("PROFESSIONAL SUMMARY", self.styles['SectionHeader']))
-            story.append(Paragraph(content.summary, self.styles['ResumeBody']))
-            story.append(Spacer(1, 0.2*inch))
-        
-        # Skills - Comma separated for ATS
-        if content.skills:
-            story.append(Paragraph("SKILLS", self.styles['SectionHeader']))
-            skills_text = ", ".join(content.skills)
-            story.append(Paragraph(skills_text, self.styles['ResumeBody']))
-            story.append(Spacer(1, 0.2*inch))
-        
-        # Experience
-        if content.experience:
-            story.append(Paragraph("PROFESSIONAL EXPERIENCE", self.styles['SectionHeader']))
-            for exp in content.experience:
-                block = []
-                # Job title and duration
-                title_text = f"<b>{exp.title}</b>"
-                block.append(Paragraph(title_text, self.styles['JobTitle']))
-                
-                # Company and location
-                company_text = f"{exp.company} | {exp.duration}"
-                if exp.location:
-                    company_text += f" | {exp.location}"
-                block.append(Paragraph(company_text, self.styles['CompanyName']))
-                
-                # Responsibilities - ATS optimized bullets
-                for resp in exp.responsibilities:
-                    block.append(Paragraph(resp, self.styles['BulletPoint'], bulletText="•"))
-                
-                block.append(Spacer(1, 0.15*inch))
-                story.append(KeepTogether(block))
-        
-        # Education
-        if content.education:
-            story.append(Paragraph("EDUCATION", self.styles['SectionHeader']))
-            for edu in content.education:
-                degree_text = f"<b>{edu.degree}</b>"
-                story.append(Paragraph(degree_text, self.styles['JobTitle']))
-                
-                institution_text = f"{edu.institution} | {edu.year}"
-                if edu.gpa:
-                    institution_text += f" | GPA: {edu.gpa}"
-                story.append(Paragraph(institution_text, self.styles['CompanyName']))
-                story.append(Spacer(1, 0.1*inch))
-        
-        # Projects
-        if content.projects:
-            story.append(Paragraph("PROJECTS", self.styles['SectionHeader']))
-            for proj in content.projects:
-                proj_name = f"<b>{proj.name}</b>"
-                story.append(Paragraph(proj_name, self.styles['JobTitle']))
-                
-                if proj.technologies:
-                    tech_text = f"Technologies: {proj.technologies}"
-                    story.append(Paragraph(tech_text, self.styles['CompanyName']))
-                
-                if proj.description:
-                    story.append(Paragraph(proj.description, self.styles['BulletPoint'], bulletText="•"))
-                
-                if proj.impact:
-                    story.append(Paragraph(proj.impact, self.styles['BulletPoint'], bulletText="•"))
-                
-                story.append(Spacer(1, 0.1*inch))
-        
-        # Certifications
-        if content.certifications:
-            story.append(Paragraph("CERTIFICATIONS", self.styles['SectionHeader']))
-            for cert in content.certifications:
-                story.append(Paragraph(cert, self.styles['BulletPoint'], bulletText="•"))
-            story.append(Spacer(1, 0.1*inch))
-        
-        # Achievements
-        if content.achievements:
-            story.append(Paragraph("ACHIEVEMENTS", self.styles['SectionHeader']))
-            for achievement in content.achievements:
-                story.append(Paragraph(achievement, self.styles['BulletPoint'], bulletText="•"))
-        
-        return story
-    
-    def _build_classic_template(self, content: ResumeContent) -> List:
-        """Build classic template with traditional layout"""
-        story = []
-        
-        # Header - Name (Centered, Times font)
-        story.append(Paragraph(content.full_name, self.styles['ResumeName']))
-        
-        # Contact Information
-        contact_parts = []
-        if content.contact.phone:
-            contact_parts.append(content.contact.phone)
-        if content.contact.email:
-            contact_parts.append(content.contact.email)
-        if content.contact.linkedin:
-            contact_parts.append(content.contact.linkedin)
-        
-        contact_text = " | ".join(contact_parts)
-        story.append(Paragraph(contact_text, self.styles['ContactInfo']))
-        story.append(Spacer(1, 0.2*inch))
-        
-        # Professional Summary
-        if content.summary:
-            story.append(Paragraph("PROFESSIONAL SUMMARY", self.styles['SectionHeader']))
-            story.append(Paragraph(content.summary, self.styles['ResumeBody']))
-            story.append(Spacer(1, 0.15*inch))
-        
-        # Skills - Comma separated for ATS
-        if content.skills:
-            story.append(Paragraph("SKILLS", self.styles['SectionHeader']))
-            skills_text = ", ".join(content.skills)
-            story.append(Paragraph(skills_text, self.styles['ResumeBody']))
-            story.append(Spacer(1, 0.15*inch))
-        
-        # Experience
-        if content.experience:
-            story.append(Paragraph("PROFESSIONAL EXPERIENCE", self.styles['SectionHeader']))
-            for exp in content.experience:
-                block = []
-                # Job title and duration
-                title_text = f"<b>{exp.title}</b>"
-                block.append(Paragraph(title_text, self.styles['JobTitle']))
-                
-                # Company and location
-                company_text = f"{exp.company} | {exp.duration}"
-                if exp.location:
-                    company_text += f" | {exp.location}"
-                block.append(Paragraph(company_text, self.styles['CompanyName']))
-                
-                # Responsibilities - ATS optimized bullets
-                for resp in exp.responsibilities:
-                    block.append(Paragraph(resp, self.styles['BulletPoint'], bulletText="•"))
-                
-                block.append(Spacer(1, 0.1*inch))
-                story.append(KeepTogether(block))
-        
-        # Education
-        if content.education:
-            story.append(Paragraph("EDUCATION", self.styles['SectionHeader']))
-            for edu in content.education:
-                degree_text = f"<b>{edu.degree}</b>"
-                story.append(Paragraph(degree_text, self.styles['JobTitle']))
-                
-                institution_text = f"{edu.institution} | {edu.year}"
-                if edu.gpa:
-                    institution_text += f" | GPA: {edu.gpa}"
-                story.append(Paragraph(institution_text, self.styles['CompanyName']))
-                story.append(Spacer(1, 0.08*inch))
-        
-        # Projects
-        if content.projects:
-            story.append(Paragraph("PROJECTS", self.styles['SectionHeader']))
-            for proj in content.projects:
-                proj_name = f"<b>{proj.name}</b>"
-                story.append(Paragraph(proj_name, self.styles['JobTitle']))
-                
-                if proj.technologies:
-                    tech_text = f"Technologies: {proj.technologies}"
-                    story.append(Paragraph(tech_text, self.styles['CompanyName']))
-                
-                if proj.description:
-                    story.append(Paragraph(proj.description, self.styles['BulletPoint'], bulletText="•"))
-                
-                if proj.impact:
-                    story.append(Paragraph(proj.impact, self.styles['BulletPoint'], bulletText="•"))
-                
-                story.append(Spacer(1, 0.08*inch))
-        
-        # Certifications
-        if content.certifications:
-            story.append(Paragraph("CERTIFICATIONS", self.styles['SectionHeader']))
-            for cert in content.certifications:
-                story.append(Paragraph(cert, self.styles['BulletPoint'], bulletText="•"))
-            story.append(Spacer(1, 0.08*inch))
-        
-        # Achievements
-        if content.achievements:
-            story.append(Paragraph("ACHIEVEMENTS", self.styles['SectionHeader']))
-            for achievement in content.achievements:
-                story.append(Paragraph(achievement, self.styles['BulletPoint'], bulletText="•"))
-        
-        return story
+            builder = ClassicTemplate()
+        else:
+            builder = ProfessionalTemplate()
+
+        doc = SimpleDocTemplate(
+            buf, pagesize=letter,
+            rightMargin=builder.margin, leftMargin=builder.margin,
+            topMargin=builder.margin,   bottomMargin=builder.margin,
+        )
+        doc.build(builder.build(resume_content))
+        buf.seek(0)
+        return buf
+
+
+# ═══════════════════════════════════════════════════════════
+#  TEMPLATE 1 — PROFESSIONAL
+#  Helvetica, centered header, thin HR dividers, black+grey
+# ═══════════════════════════════════════════════════════════
+class ProfessionalTemplate:
+    margin = 0.7 * inch
+
+    def __init__(self):
+        ss = getSampleStyleSheet()
+        def s(name, **kw):
+            return ParagraphStyle(name=name, parent=ss['Normal'], **kw)
+
+        self.name     = s('P_Name',  fontSize=22, fontName='Helvetica-Bold',
+                          textColor=BLACK, alignment=TA_CENTER, spaceAfter=3)
+        self.contact  = s('P_Cont',  fontSize=9.5, fontName='Helvetica',
+                          textColor=DGRAY, alignment=TA_CENTER, spaceAfter=8)
+        self.sec_hdr  = s('P_Sec',   fontSize=10.5, fontName='Helvetica-Bold',
+                          textColor=BLACK, spaceBefore=10, spaceAfter=4, letterSpacing=1.2)
+        self.job_ttl  = s('P_Jttl',  fontSize=10.5, fontName='Helvetica-Bold',
+                          textColor=BLACK, spaceAfter=1)
+        self.sub      = s('P_Sub',   fontSize=9.5, fontName='Helvetica-Oblique',
+                          textColor=LGRAY, spaceAfter=3)
+        self.body     = s('P_Body',  fontSize=10, fontName='Helvetica',
+                          textColor=BLACK, leading=14, spaceAfter=5)
+        self.bullet   = s('P_Bul',   fontSize=9.5, fontName='Helvetica',
+                          textColor=BLACK, leftIndent=14, spaceAfter=3, leading=13)
+
+    def divider(self):
+        return HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CCCCCC'), spaceAfter=6)
+
+    def section(self, title):
+        return [
+            Paragraph(title.upper(), self.sec_hdr),
+            self.divider(),
+        ]
+
+    def build(self, rc: ResumeContent) -> List:
+        st = []
+
+        st.append(Paragraph(rc.full_name, self.name))
+        cp = _contact_parts(rc)
+        if cp: st.append(Paragraph(' | '.join(cp), self.contact))
+        st.append(Spacer(1, 0.15*inch))
+
+        if rc.summary:
+            st += self.section('Professional Summary')
+            st.append(Paragraph(rc.summary, self.body))
+            st.append(Spacer(1, 0.08*inch))
+
+        if rc.skills:
+            st += self.section('Skills')
+            st.append(Paragraph(', '.join(rc.skills), self.body))
+            st.append(Spacer(1, 0.08*inch))
+
+        if rc.experience:
+            st += self.section('Professional Experience')
+            for exp in rc.experience:
+                blk = []
+                blk.append(Paragraph(f'<b>{exp.title}</b>', self.job_ttl))
+                sub = f'{exp.company} | {exp.duration}'
+                if exp.location: sub += f' | {exp.location}'
+                blk.append(Paragraph(sub, self.sub))
+                for r in (exp.responsibilities or []):
+                    blk.append(Paragraph(r, self.bullet, bulletText='•'))
+                blk.append(Spacer(1, 0.08*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.education:
+            st += self.section('Education')
+            for edu in rc.education:
+                blk = [Paragraph(f'<b>{edu.degree}</b>', self.job_ttl)]
+                sub = f'{edu.institution} | {edu.year}'
+                if edu.gpa: sub += f' | GPA: {edu.gpa}'
+                blk.append(Paragraph(sub, self.sub))
+                blk.append(Spacer(1, 0.06*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.projects:
+            st += self.section('Projects')
+            for p in rc.projects:
+                blk = [Paragraph(f'<b>{p.name}</b>', self.job_ttl)]
+                if p.technologies:
+                    blk.append(Paragraph(f'Technologies: {p.technologies}', self.sub))
+                if p.description:
+                    blk.append(Paragraph(p.description, self.bullet, bulletText='•'))
+                if p.impact:
+                    blk.append(Paragraph(p.impact, self.bullet, bulletText='•'))
+                blk.append(Spacer(1, 0.06*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.certifications:
+            st += self.section('Certifications')
+            for c in rc.certifications:
+                if c and c.strip():
+                    st.append(Paragraph(c, self.bullet, bulletText='•'))
+            st.append(Spacer(1, 0.06*inch))
+
+        if rc.achievements:
+            st += self.section('Achievements')
+            for a in rc.achievements:
+                if a and a.strip():
+                    st.append(Paragraph(a, self.bullet, bulletText='•'))
+
+        return st
+
+
+# ═══════════════════════════════════════════════════════════
+#  TEMPLATE 2 — MODERN (FAANG)
+#  Navy name, green accent line, left-aligned, metric-heavy
+# ═══════════════════════════════════════════════════════════
+class ModernTemplate:
+    margin = 0.65 * inch
+
+    def __init__(self):
+        ss = getSampleStyleSheet()
+        def s(name, **kw):
+            return ParagraphStyle(name=name, parent=ss['Normal'], **kw)
+
+        self.name     = s('M_Name',  fontSize=26, fontName='Helvetica-Bold',
+                          textColor=NAVY, alignment=TA_LEFT, spaceAfter=2)
+        self.role_tag = s('M_Role',  fontSize=12, fontName='Helvetica',
+                          textColor=GREEN, alignment=TA_LEFT, spaceAfter=6)
+        self.contact  = s('M_Cont',  fontSize=9.5, fontName='Helvetica',
+                          textColor=DGRAY, alignment=TA_LEFT, spaceAfter=10)
+        self.sec_hdr  = s('M_Sec',   fontSize=11, fontName='Helvetica-Bold',
+                          textColor=GREEN, spaceBefore=14, spaceAfter=3, letterSpacing=0.8)
+        self.job_ttl  = s('M_Jttl',  fontSize=11, fontName='Helvetica-Bold',
+                          textColor=NAVY, spaceAfter=1)
+        self.sub      = s('M_Sub',   fontSize=9.5, fontName='Helvetica',
+                          textColor=LGRAY, spaceAfter=3)
+        self.body     = s('M_Body',  fontSize=10, fontName='Helvetica',
+                          textColor=BLACK, leading=14, spaceAfter=5)
+        self.bullet   = s('M_Bul',   fontSize=9.5, fontName='Helvetica',
+                          textColor=BLACK, leftIndent=14, spaceAfter=3, leading=13)
+
+    def green_line(self):
+        return HRFlowable(width="100%", thickness=2, color=GREEN, spaceAfter=8, spaceBefore=0)
+
+    def section(self, title):
+        return [
+            Paragraph(title.upper(), self.sec_hdr),
+            HRFlowable(width="100%", thickness=1, color=colors.HexColor('#D1E8DB'), spaceAfter=5),
+        ]
+
+    def build(self, rc: ResumeContent) -> List:
+        st = []
+
+        st.append(Paragraph(rc.full_name, self.name))
+        st.append(self.green_line())
+
+        cp = _contact_parts(rc)
+        if cp: st.append(Paragraph('  ·  '.join(cp), self.contact))
+        st.append(Spacer(1, 0.1*inch))
+
+        if rc.summary:
+            st += self.section('Profile')
+            st.append(Paragraph(rc.summary, self.body))
+
+        if rc.skills:
+            st += self.section('Core Skills')
+            # Group skills into rows of 4 for a modern pill layout
+            skill_text = '   ▸   '.join(rc.skills)
+            st.append(Paragraph(skill_text, self.body))
+            st.append(Spacer(1, 0.05*inch))
+
+        if rc.experience:
+            st += self.section('Experience')
+            for exp in rc.experience:
+                blk = []
+                # Two-column: title | duration
+                title_run = f'<b>{exp.title}</b>'
+                blk.append(Paragraph(title_run, self.job_ttl))
+                sub = f'{exp.company}'
+                if exp.location: sub += f', {exp.location}'
+                sub += f'  |  {exp.duration}'
+                blk.append(Paragraph(sub, self.sub))
+                for r in (exp.responsibilities or []):
+                    blk.append(Paragraph(r, self.bullet, bulletText='▸'))
+                blk.append(Spacer(1, 0.1*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.education:
+            st += self.section('Education')
+            for edu in rc.education:
+                blk = [Paragraph(f'<b>{edu.degree}</b>', self.job_ttl)]
+                sub = f'{edu.institution}  |  {edu.year}'
+                if edu.gpa: sub += f'  |  CGPA: {edu.gpa}'
+                blk.append(Paragraph(sub, self.sub))
+                blk.append(Spacer(1, 0.06*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.projects:
+            st += self.section('Projects')
+            for p in rc.projects:
+                blk = [Paragraph(f'<b>{p.name}</b>', self.job_ttl)]
+                if p.technologies:
+                    blk.append(Paragraph(f'Stack: {p.technologies}', self.sub))
+                if p.description:
+                    blk.append(Paragraph(p.description, self.bullet, bulletText='▸'))
+                if p.impact:
+                    blk.append(Paragraph(f'<b>Impact:</b> {p.impact}', self.bullet, bulletText='▸'))
+                blk.append(Spacer(1, 0.07*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.certifications:
+            st += self.section('Certifications')
+            for c in rc.certifications:
+                if c and c.strip():
+                    st.append(Paragraph(c, self.bullet, bulletText='▸'))
+            st.append(Spacer(1, 0.06*inch))
+
+        if rc.achievements:
+            st += self.section('Achievements & Awards')
+            for a in rc.achievements:
+                if a and a.strip():
+                    st.append(Paragraph(a, self.bullet, bulletText='▸'))
+
+        return st
+
+
+# ═══════════════════════════════════════════════════════════
+#  TEMPLATE 3 — CLASSIC
+#  Times New Roman, centered name, full-width ruled dividers
+# ═══════════════════════════════════════════════════════════
+class ClassicTemplate:
+    margin = 0.8 * inch
+
+    def __init__(self):
+        ss = getSampleStyleSheet()
+        def s(name, **kw):
+            return ParagraphStyle(name=name, parent=ss['Normal'], **kw)
+
+        self.name     = s('C_Name',  fontSize=24, fontName='Times-Bold',
+                          textColor=BLACK, alignment=TA_CENTER, spaceAfter=2)
+        self.contact  = s('C_Cont',  fontSize=10, fontName='Times-Roman',
+                          textColor=DGRAY, alignment=TA_CENTER, spaceAfter=6)
+        self.sec_hdr  = s('C_Sec',   fontSize=12, fontName='Times-Bold',
+                          textColor=BLACK, spaceBefore=12, spaceAfter=2,
+                          alignment=TA_CENTER, letterSpacing=2)
+        self.job_ttl  = s('C_Jttl',  fontSize=11, fontName='Times-Bold',
+                          textColor=BLACK, spaceAfter=1)
+        self.sub      = s('C_Sub',   fontSize=10, fontName='Times-Italic',
+                          textColor=DGRAY, spaceAfter=4)
+        self.body     = s('C_Body',  fontSize=10.5, fontName='Times-Roman',
+                          textColor=BLACK, leading=15, spaceAfter=5)
+        self.bullet   = s('C_Bul',   fontSize=10, fontName='Times-Roman',
+                          textColor=BLACK, leftIndent=18, spaceAfter=4, leading=14)
+
+    def divider_full(self):
+        return HRFlowable(width="100%", thickness=1, color=BLACK, spaceAfter=6, spaceBefore=2)
+
+    def divider_thin(self):
+        return HRFlowable(width="100%", thickness=0.4, color=LGRAY, spaceAfter=5)
+
+    def section(self, title):
+        return [
+            self.divider_full(),
+            Paragraph(title, self.sec_hdr),
+            self.divider_full(),
+        ]
+
+    def build(self, rc: ResumeContent) -> List:
+        st = []
+
+        st.append(Paragraph(rc.full_name, self.name))
+        cp = _contact_parts(rc)
+        if cp: st.append(Paragraph(' | '.join(cp), self.contact))
+        st.append(Spacer(1, 0.05*inch))
+
+        if rc.summary:
+            st += self.section('PROFESSIONAL SUMMARY')
+            st.append(Paragraph(rc.summary, self.body))
+            st.append(Spacer(1, 0.05*inch))
+
+        if rc.skills:
+            st += self.section('SKILLS')
+            st.append(Paragraph(' • '.join(rc.skills), self.body))
+            st.append(Spacer(1, 0.05*inch))
+
+        if rc.experience:
+            st += self.section('PROFESSIONAL EXPERIENCE')
+            for exp in rc.experience:
+                blk = []
+                blk.append(Paragraph(f'<b>{exp.title}</b>', self.job_ttl))
+                sub = f'{exp.company}  |  {exp.duration}'
+                if exp.location: sub += f'  |  {exp.location}'
+                blk.append(Paragraph(sub, self.sub))
+                for r in (exp.responsibilities or []):
+                    blk.append(Paragraph(r, self.bullet, bulletText='•'))
+                blk.append(Spacer(1, 0.08*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.education:
+            st += self.section('EDUCATION')
+            for edu in rc.education:
+                blk = [Paragraph(f'<b>{edu.degree}</b>', self.job_ttl)]
+                sub = f'{edu.institution}  |  {edu.year}'
+                if edu.gpa: sub += f'  |  GPA: {edu.gpa}'
+                blk.append(Paragraph(sub, self.sub))
+                blk.append(Spacer(1, 0.06*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.projects:
+            st += self.section('PROJECTS')
+            for p in rc.projects:
+                blk = [Paragraph(f'<b>{p.name}</b>', self.job_ttl)]
+                if p.technologies:
+                    blk.append(Paragraph(f'Technologies: {p.technologies}', self.sub))
+                if p.description:
+                    blk.append(Paragraph(p.description, self.bullet, bulletText='•'))
+                if p.impact:
+                    blk.append(Paragraph(p.impact, self.bullet, bulletText='•'))
+                blk.append(Spacer(1, 0.06*inch))
+                st.append(KeepTogether(blk))
+
+        if rc.certifications:
+            st += self.section('CERTIFICATIONS')
+            for c in rc.certifications:
+                if c and c.strip():
+                    st.append(Paragraph(c, self.bullet, bulletText='•'))
+            st.append(Spacer(1, 0.05*inch))
+
+        if rc.achievements:
+            st += self.section('ACHIEVEMENTS')
+            for a in rc.achievements:
+                if a and a.strip():
+                    st.append(Paragraph(a, self.bullet, bulletText='•'))
+
+        return st
+
+
+# ── Shared helper ──────────────────────────────────────────
+def _contact_parts(rc: ResumeContent) -> List[str]:
+    parts = []
+    if rc.contact.phone:    parts.append(rc.contact.phone)
+    if rc.contact.email:    parts.append(rc.contact.email)
+    if rc.contact.linkedin: parts.append(rc.contact.linkedin)
+    if rc.contact.github:   parts.append(rc.contact.github)
+    return parts
