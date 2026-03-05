@@ -352,7 +352,7 @@ async function generateResume() {
   if (data.job_description)  fd.append('job_description', data.job_description);
 
   // Pass all real user data as JSON so backend can use it
-  fd.append('user_data', JSON.stringify(data));
+  fd.append('user_data_raw', JSON.stringify(data));
 
   currentTemplate = data.template;
 

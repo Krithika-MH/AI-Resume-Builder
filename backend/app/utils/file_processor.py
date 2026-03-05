@@ -6,6 +6,11 @@ from pypdf import PdfReader
 from docx import Document
 import io
 from typing import Optional
+import json
+import re
+from google.genai import types
+from backend.app.services.gemini_service import GeminiService
+
 
 class FileProcessor:
     """Process uploaded resume files"""
@@ -30,7 +35,7 @@ class FileProcessor:
                 text += page.extract_text() + "\n"
             
             return text.strip()
-        
+            
         except Exception as e:
             print(f"Error extracting PDF text: {str(e)}")
             return ""
@@ -61,7 +66,7 @@ class FileProcessor:
                         text += cell.text + "\n"
             
             return text.strip()
-        
+            
         except Exception as e:
             print(f"Error extracting DOCX text: {str(e)}")
             return ""
@@ -113,3 +118,87 @@ class FileProcessor:
             return False, f"File size exceeds maximum allowed size of {max_size_mb}MB"
         
         return True, ""
+
+    @staticmethod
+    def parse_resume_to_structured_data(text: str, full_name: str, target_role: str) -> dict:
+        """
+        Parse raw resume text into structured user_data format using Gemini
+        Returns same format as manual form for consistent processing
+        """
+        try:
+            gemini = GeminiService()
+            prompt = f"""
+            PARSE this resume text into structured JSON format EXACTLY matching this schema:
+            
+            Name: {full_name}
+            Target Role: {target_role}
+            
+            Resume text:
+            {text[:4000]}
+            
+            Return ONLY JSON with this EXACT structure:
+            {{
+                "full_name": "{full_name}",
+                "summary": "Extracted/created summary",
+                "tech_skills": ["Python", "AWS", "Docker"],
+                "soft_skills": ["Leadership", "Communication"],
+                "experience": [{{
+                    "title": "Software Engineer",
+                    "company": "Google", 
+                    "duration": "2022-Present",
+                    "location": "Bangalore",
+                    "responsibilities": ["Built scalable APIs", "Led team of 5"]
+                }}],
+                "education": [{{
+                    "degree": "B.Tech Computer Science",
+                    "institution": "IIT Madras",
+                    "year": "2022",
+                    "gpa": "8.5"
+                }}],
+                "projects": [{{
+                    "name": "Smart Expense Tracker",
+                    "description": "Full-stack expense management app",
+                    "technologies": "React, Node.js, MongoDB",
+                    "impact": "Deployed to 500+ users"
+                }}],
+                "certifications": ["AWS Certified Solutions Architect", "Google Data Analytics"],
+                "achievements": ["Won hackathon 2023", "Top 5% LeetCode"]
+            }}
+            
+            Extract ALL sections. If missing, use reasonable defaults for {target_role}.
+            """
+            
+            # Use same Gemini service to parse
+            config = types.GenerateContentConfig(
+                temperature=0.1,  # Very low for structured output
+                response_mime_type="application/json"
+            )
+            
+            response = gemini.client.models.generate_content(
+                model=gemini.model_id,
+                contents=prompt,
+                config=config
+            )
+            
+            raw_json = response.text
+            cleaned = re.sub(r'^```json\s*|\s*```$', '', raw_json.strip(), flags=re.MULTILINE)
+            
+            structured_data = json.loads(cleaned)
+            print(f"📦 Parsed resume → {len(json.dumps(structured_data))} chars structured data")
+            
+            return structured_data
+            
+        except Exception as e:
+            print(f"⚠️ Resume parsing failed: {e}")
+            # Fallback: minimal structured data
+            return {
+                "full_name": full_name,
+                "summary": "Experienced professional seeking opportunities",
+                "tech_skills": [],
+                "soft_skills": [],
+                "experience": [],
+                "education": [],
+                "projects": [],
+                "certifications": [],
+                "achievements": []
+            }

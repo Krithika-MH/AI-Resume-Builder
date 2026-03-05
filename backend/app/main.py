@@ -9,6 +9,7 @@ from backend.app.api.routes import router
 from backend.app.core.config import settings
 import os
 
+
 # Validate configuration on startup
 try:
     settings.validate()
@@ -17,6 +18,7 @@ except ValueError as e:
     print("Please set GEMINI_API_KEY in your .env file")
     exit(1)
 
+
 # Initialize FastAPI app
 app = FastAPI(
     title="AI Resume Builder API",
@@ -24,6 +26,7 @@ app = FastAPI(
     version="1.0.0",
     debug=settings.DEBUG
 )
+
 
 # Configure CORS
 app.add_middleware(
@@ -34,20 +37,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Include API routes
 app.include_router(router, prefix="/api", tags=["Resume Builder"])
+
 
 # Get the absolute path to the frontend directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))
 frontend_path = os.path.join(project_root, "frontend")
 
-# Mount static files
+
+# Mount static files - ✅ FIXED LINE 47
 app.mount("/static", StaticFiles(directory=os.path.join(frontend_path, "static")), name="static")
-app.mount("/pages", StaticFiles(directory=os.path.join(frontend_path, "pages"), html=True), name="pages")
+app.mount("/pages", StaticFiles(directory=os.path.join(frontend_path, "pages")), name="pages")  # ← REMOVED html=True
+app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")  # ← ADD THIS LINE
+
 
 # Serve index.html at root
 from fastapi.responses import FileResponse
+
 
 @app.get("/")
 async def read_root():
@@ -55,11 +64,13 @@ async def read_root():
     index_path = os.path.join(frontend_path, "index.html")
     return FileResponse(index_path)
 
+
 @app.get("/favicon.ico")
 async def favicon():
     """Return 204 No Content for favicon requests"""
     from fastapi.responses import Response
     return Response(status_code=204)
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -12,20 +12,28 @@ from backend.app.models.schemas import (
 import json
 import re
 
-
-
-
 class GeminiService:
     def __init__(self):
         self.client   = genai.Client(api_key=settings.GEMINI_API_KEY)
         self.model_id = 'gemini-2.5-flash'
         print(f"✅ Gemini Service initialized with model: {self.model_id}")
 
+    def _fix_arrays(self, value):
+        """Convert arrays to strings for Pydantic"""
+        if isinstance(value, list):
+            return " ".join(str(v).strip() for v in value if str(v).strip())
+        return str(value)
 
-
+    def _safe_parse_list(self, value):
+        """Ensure lists contain strings only"""
+        if isinstance(value, list):
+            return [str(v) for v in value]
+        elif isinstance(value, str):
+            return [value]
+        return []
 
     # ------------------------------------------------------------------ #
-    #  PUBLIC: main entry point                                             #
+    #  PUBLIC: main entry point                                           #
     # ------------------------------------------------------------------ #
     def generate_resume_content(
         self,
@@ -39,14 +47,8 @@ class GeminiService:
         user_data:              dict = None,   # ← structured form data
     ) -> ResumeContent:
 
-
-
-
         print(f"\n🤖 Generating resume for: {full_name}  |  Role: {target_role}")
         print(f"📋 Template used: {template or 'professional'}")  # ✅ DEBUG
-
-
-
 
         # ── Build prompt ──────────────────────────────────────────────
         prompt = self._build_prompt(
@@ -54,9 +56,6 @@ class GeminiService:
             template or "professional",  # ✅ SAFE DEFAULT
             job_description, existing_resume_text, user_data
         )
-
-
-
 
         try:
             config = types.GenerateContentConfig(
@@ -66,9 +65,6 @@ class GeminiService:
                 response_mime_type="application/json",
             )
 
-
-
-
             print("📡 Calling Gemini API…")
             response = self.client.models.generate_content(
                 model=self.model_id,
@@ -76,29 +72,17 @@ class GeminiService:
                 config=config,
             )
 
-
-
-
             raw = response.text
             print(f"✅ Received {len(raw)} chars")
-
-
-
 
             data = self._parse_json(raw)
             if not data:
                 raise ValueError("Empty / unparseable response")
 
-
-
-
             return self._build_resume_content(
                 full_name, phone, email, target_role,
                 data, user_data
             )
-
-
-
 
         except Exception as e:
             print(f"❌ Gemini error: {e}")
@@ -108,11 +92,8 @@ class GeminiService:
                 full_name, phone, email, target_role, user_data
             )
 
-
-
-
     # ------------------------------------------------------------------ #
-    #  Prompt builder                                                         #
+    #  Prompt builder                                                       #
     # ------------------------------------------------------------------ #
     def _build_prompt(
         self,
@@ -121,14 +102,8 @@ class GeminiService:
         job_description, existing_resume_text, user_data,
     ) -> str:
 
-
-
-
         # ── Summarise what the user actually gave us ──────────────────
         ud = user_data or {}
-
-
-
 
         lines = [
             f"You are a professional resume writer.",
@@ -136,8 +111,6 @@ class GeminiService:
             "",
             "STYLE RULES:",
         ]
-
-
 
         if (template or "professional").lower() == "professional":
             lines += [
@@ -162,8 +135,6 @@ class GeminiService:
                 "- Suitable for finance, government, or traditional industries.",
             ]
 
-
-
         lines += [
             "",
             "IMPACT & QUALITY RULES (CRITICAL):",
@@ -186,14 +157,8 @@ class GeminiService:
             f"Target Role : {target_role}",
         ]
 
-
-
-
         if ud.get('linkedin'):  lines.append(f"LinkedIn    : {ud['linkedin']}")
         if ud.get('github'):    lines.append(f"GitHub      : {ud['github']}")
-
-
-
 
         # Summary hint
         if ud.get('summary'):
@@ -205,9 +170,6 @@ class GeminiService:
                       "the skills, experience, and education listed below. Do NOT mention",
                       "companies or achievements that aren't listed."]
 
-
-
-
         # Skills
         tech = ud.get('tech_skills', [])
         soft = ud.get('soft_skills', [])
@@ -218,9 +180,6 @@ class GeminiService:
         else:
             lines += ["", "=== SKILLS ===",
                       f"Generate 8 skills MOST relevant to {target_role}. Prioritize technical and ATS-relevant keywords."]
-
-
-
 
         # Experience
         exp_list = ud.get('experience', [])
@@ -243,9 +202,6 @@ class GeminiService:
             lines += ["", "=== WORK EXPERIENCE ===",
                       "No experience provided. Leave experience list empty ([])."]
 
-
-
-
         # Education
         edu_list = ud.get('education', [])
         if edu_list:
@@ -259,9 +215,6 @@ class GeminiService:
         else:
             lines += ["", "=== EDUCATION ===",
                       "No education provided. Leave education list empty ([])."]
-
-
-
 
         # Projects
         proj_list = ud.get('projects', [])
@@ -277,18 +230,12 @@ class GeminiService:
             lines += ["", "=== PROJECTS ===",
                       "No projects provided. Leave projects list empty ([])."]
 
-
-
-
         # Certifications
         certs = ud.get('certifications', [])
         if certs:
             lines += ["", "=== CERTIFICATIONS (use exactly as given) ==="] + certs
         else:
             lines += ["", "=== CERTIFICATIONS ===", "None provided. Leave empty ([])."]
-
-
-
 
         # Achievements
         achs = ud.get('achievements', [])
@@ -297,27 +244,21 @@ class GeminiService:
         else:
             lines += ["", "=== ACHIEVEMENTS ===", "None provided. Leave empty ([])."]
 
-
-
-
         # Job description
         if job_description:
             lines += ["", "=== JOB DESCRIPTION (align keywords only – don't invent) ===",
                       job_description[:800]]
-
-
-
 
         # Existing resume
         if existing_resume_text:
             lines += ["", "=== EXISTING RESUME TEXT (extract real facts from here) ===",
                       existing_resume_text[:1500]]
 
-
-
-
-        # Output format
+        # Output format - FIXED WITH 2 NEW LINES
         lines += [
+            "",
+            "CRITICAL: description and impact fields MUST be SINGLE STRINGS, never arrays!",
+            "Example: \"description\": \"Built full-stack app using React and Node.js\"",
             "",
             "=== OUTPUT FORMAT ===",
             "Return ONLY valid JSON matching this schema exactly:",
@@ -343,16 +284,10 @@ class GeminiService:
             "7. Use concise bullet points (1–2 lines max).",
         ]
 
-
-
-
         return "\n".join(lines)
 
-
-
-
     # ------------------------------------------------------------------ #
-    #  Parse Gemini response                                                     #
+    #  Parse Gemini response                                               #
     # ------------------------------------------------------------------ #
     def _parse_json(self, raw: str) -> dict:
         try:
@@ -370,11 +305,8 @@ class GeminiService:
             print("First 400 chars:", raw[:400])
             return {}
 
-
-
-
     # ------------------------------------------------------------------ #
-    #  Build ResumeContent from Gemini's polished JSON                          #
+    #  Build ResumeContent from Gemini's polished JSON                      #
     # ------------------------------------------------------------------ #
     def _build_resume_content(
         self,
@@ -384,9 +316,6 @@ class GeminiService:
     ) -> ResumeContent:
         ud = user_data or {}
 
-
-
-
         contact = ContactInfo(
             phone=phone,
             email=email,
@@ -395,85 +324,71 @@ class GeminiService:
             portfolio=ud.get('portfolio', ''),
         )
 
-
-
-
-        # Experience
+        # Experience - FIXED
         experience = []
         for e in data.get('experience', []):
             try:
+                responsibilities = self._safe_parse_list(e.get('responsibilities', []))
                 experience.append(ExperienceItem(
-                    title=e.get('title', ''),
-                    company=e.get('company', ''),
-                    duration=e.get('duration', ''),
-                    location=e.get('location', ''),
-                    responsibilities=e.get('responsibilities', []),
+                    title=str(e.get('title', '')),
+                    company=str(e.get('company', '')),
+                    duration=str(e.get('duration', '')),
+                    location=str(e.get('location', '')),
+                    responsibilities=responsibilities,  # ✅ FIXED
                 ))
             except Exception as ex:
                 print(f"⚠️ Bad exp entry: {ex}")
 
-
-
-
-        # Education
+        # Education - FIXED
         education = []
         for e in data.get('education', []):
             try:
                 education.append(EducationItem(
-                    degree=e.get('degree', ''),
-                    institution=e.get('institution', ''),
+                    degree=str(e.get('degree', '')),
+                    institution=str(e.get('institution', '')),
                     year=str(e.get('year', '')),
-                    gpa=e.get('gpa') or None,
+                    gpa=str(e.get('gpa', '')) if e.get('gpa') else None,
                 ))
             except Exception as ex:
                 print(f"⚠️ Bad edu entry: {ex}")
 
-
-
-
-        # Projects
+        # Projects - FIXED (MAIN CULPRIT!)
         projects = []
         for p in data.get('projects', []):
             try:
                 projects.append(ProjectItem(
-                    name=p.get('name', ''),
-                    description=p.get('description', ''),
-                    technologies=p.get('technologies', ''),
-                    impact=p.get('impact', ''),
+                    name=str(p.get('name', '')),
+                    description=self._fix_arrays(p.get('description', '')),  # ✅ ARRAY → STRING
+                    technologies=str(p.get('technologies', '')),
+                    impact=self._fix_arrays(p.get('impact', '')),           # ✅ ARRAY → STRING
                 ))
             except Exception as ex:
                 print(f"⚠️ Bad proj entry: {ex}")
-
-
-
+                print(f"Raw project: {p}")  # DEBUG
 
         rc = ResumeContent(
             full_name=full_name,
             contact=contact,
-            summary=data.get('summary', ''),
-            skills=data.get('skills', []),
+            summary=str(data.get('summary', '')),
+            skills=self._safe_parse_list(data.get('skills', [])),      # ✅ FIXED
             experience=experience,
             education=education,
             projects=projects,
-            certifications=data.get('certifications', []),
-            achievements=data.get('achievements', []),
+            certifications=self._safe_parse_list(data.get('certifications', [])),  # ✅ FIXED
+            achievements=self._safe_parse_list(data.get('achievements', [])),     # ✅ FIXED
         )
-
-
-
 
         print(f"  Summary chars : {len(rc.summary)}")
         print(f"  Skills        : {len(rc.skills)}")
         print(f"  Experience    : {len(rc.experience)}")
         print(f"  Education     : {len(rc.education)}")
         print(f"  Projects      : {len(rc.projects)}")
+        print(f"  Certifications: {len(rc.certifications)}")  # ✅ NEW
+        print(f"  Achievements  : {len(rc.achievements)}")    # ✅ NEW
         return rc
 
-
-
-
     # ------------------------------------------------------------------ #
-    #  Fallback: use raw user data without AI polishing                          #
+    #  Fallback: use raw user data without AI polishing                     #
     # ------------------------------------------------------------------ #
     def _build_from_raw_user_data(
         self,
@@ -483,18 +398,12 @@ class GeminiService:
         print("⚠️  Using raw user data as fallback (no AI polish)")
         ud = user_data or {}
 
-
-
-
         contact = ContactInfo(
             phone=phone, email=email,
             linkedin=ud.get('linkedin', ''),
             github=ud.get('github', ''),
             portfolio=ud.get('portfolio', ''),
         )
-
-
-
 
         tech = ud.get('tech_skills', [])
         soft = ud.get('soft_skills', [])
@@ -503,17 +412,11 @@ class GeminiService:
             'Time Management', 'Critical Thinking',
         ]
 
-
-
-
         summary = ud.get('summary') or (
             f"Motivated professional seeking {target_role} role. "
             "Skilled in " + ", ".join(skills[:4]) + ". "
             "Committed to delivering high-quality results."
         )
-
-
-
 
         experience = []
         for e in ud.get('experience', []):
@@ -530,9 +433,6 @@ class GeminiService:
                 ]),
             ))
 
-
-
-
         education = []
         for e in ud.get('education', []):
             if not e.get('degree') and not e.get('institution'):
@@ -544,9 +444,6 @@ class GeminiService:
                 gpa=e.get('gpa') or None,
             ))
 
-
-
-
         projects = []
         for p in ud.get('projects', []):
             if not p.get('name'):
@@ -557,9 +454,6 @@ class GeminiService:
                 technologies=p.get('technologies', ''),
                 impact=p.get('impact', ''),
             ))
-
-
-
 
         return ResumeContent(
             full_name=full_name,
