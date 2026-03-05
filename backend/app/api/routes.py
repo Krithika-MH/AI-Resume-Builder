@@ -4,7 +4,7 @@ Handles all HTTP endpoints for resume generation, ATS checking, and file downloa
 """
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
-from backend.app.models.schemas import ResumeInput, ResumeResponse, ATSCheckInput, ATSScore
+from backend.app.models.schemas import ResumeResponse, ATSCheckInput, ATSScore
 from backend.app.services.gemini_service import GeminiService
 from backend.app.services.ats_scoring_service import ATSScoringService
 from backend.app.services.pdf_service import PDFGenerationService
@@ -15,7 +15,9 @@ import json
 import traceback
 
 
+
 router = APIRouter()
+
 
 
 # Initialize services
@@ -24,6 +26,7 @@ ats_service = ATSScoringService()
 pdf_service = PDFGenerationService()
 docx_service = DOCXGenerationService()
 file_processor = FileProcessor()
+
 
 @router.post("/generate-resume", response_model=ResumeResponse)
 async def generate_resume(
@@ -157,6 +160,7 @@ async def generate_resume(
             detail=f"Error generating resume: {str(e)}"
         )
 
+
 @router.post("/check-ats-score", response_model=ATSScore)
 async def check_ats_score(
     resume_file: UploadFile = File(...),
@@ -227,6 +231,7 @@ async def check_ats_score(
             detail=f"Error checking ATS score: {str(e)}"
         )
 
+
 @router.post("/download-pdf")
 async def download_pdf(resume_data: str = Form(...), template: str = Form("professional")):
     """
@@ -264,6 +269,7 @@ async def download_pdf(resume_data: str = Form(...), template: str = Form("profe
             detail=f"Error generating PDF: {str(e)}"
         )
 
+
 @router.post("/download-docx")
 async def download_docx(resume_data: str = Form(...), template: str = Form("professional")):
     """
@@ -300,6 +306,7 @@ async def download_docx(resume_data: str = Form(...), template: str = Form("prof
             status_code=500,
             detail=f"Error generating DOCX: {str(e)}"
         )
+
 
 @router.get("/health")
 async def health_check():
