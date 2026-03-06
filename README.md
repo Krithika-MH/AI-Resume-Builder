@@ -1,6 +1,5 @@
 <div align="center">
 
-<table border="0" style="border: none;">
   <tr style="border: none;">
     <td width="180" style="border: none; padding-right: 30px;">
       <img src="frontend/static/images/ResumeWise - logo.png" alt="ResumeWise Logo" width="160" />
@@ -15,7 +14,7 @@
       </a>
     </td>
   </tr>
-</table>
+
 
 <br />
 
