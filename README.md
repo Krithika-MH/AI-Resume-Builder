@@ -1,21 +1,23 @@
 <div align="center">
-  <br />
-  <div style="display: flex; align-items: center; justify-content: center; gap: 40px; text-align: left;">
-    <img src="frontend/static/images/ResumeWise - logo.png" alt="ResumeWise Logo" width="160" />
-    <div>
-      <h1 style="margin: 0; border: none;">ResumeWise AI</h1>
-      <p style="font-size: 1.2rem; margin: 5px 0;">✦ AI-Powered · Industry Grade ATS Scoring</p>
-      <p style="color: #666; margin: 5px 0;">Smarter Resumes. Stronger Careers.</p>
-      <div style="margin-top: 15px;">
-        <a href="https://ai-resume-builder-mo1b.onrender.com/" target="_blank">
-          <img src="https://img.shields.io/badge/✨_Build_My_Resume_Live-6366f1?style=for-the-badge" alt="Build Resume" />
-        </a>
-      </div>
-    </div>
-  </div>
-  <br />
 
----
+<table border="0" style="border: none;">
+  <tr style="border: none;">
+    <td width="180" style="border: none; padding-right: 30px;">
+      <img src="frontend/static/images/ResumeWise - logo.png" alt="ResumeWise Logo" width="160" />
+    </td>
+    <td style="border: none; text-align: left;">
+      <h1 style="border: none; margin-bottom: 0;">ResumeWise AI</h1>
+      <p style="font-size: 1.3em; margin: 0;"><b>✦ AI-Powered · Industry Grade ATS Scoring</b></p>
+      <p style="color: #555; margin-top: 5px;"><i>Smarter Resumes. Stronger Careers.</i></p>
+      <br />
+      <a href="https://ai-resume-builder-mo1b.onrender.com/" target="_blank">
+        <img src="https://img.shields.io/badge/✨_Build_My_Resume_Live-6366f1?style=for-the-badge" alt="Build Resume" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+<br />
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -23,7 +25,7 @@
 [![Tailwind](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Render](https://img.shields.io/badge/Deployed_on-Render-430098?style=flat-square&logo=render&logoColor=white)](https://ai-resume-builder-mo1b.onrender.com/)
 
-</div>
+---
 </div>
 
 ---
