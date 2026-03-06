@@ -29,7 +29,7 @@
 [![Render](https://img.shields.io/badge/Deployed_on-Render-430098?style=flat-square&logo=render&logoColor=white)](https://ai-resume-builder-mo1b.onrender.com/)
 
 ---
-</div>
+</div align="center">
 
 ## 📺 Project Demo
 Experience the full workflow of **ResumeWise AI**, from AI content generation to live editing and FAANG-grade ATS scoring.
@@ -66,8 +66,9 @@ ResumeWise AI provides:
 
 ---
 
-
-### 🚀 [Try the Live App on Render](https://ai-resume-builder-mo1b.onrender.com/)
+<div align="center">
+  <h3>🚀 <a href="https://ai-resume-builder-mo1b.onrender.com/">Try the Live App on Render</a></h3>
+</div>
 
 ---
 
