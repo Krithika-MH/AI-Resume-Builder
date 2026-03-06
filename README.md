@@ -25,11 +25,12 @@
 
 ## 📺 Project Demo
 Watch ResumeWise AI in action. This video covers AI generation, the live inline editor, and the FAANG-grade ATS scoring engine.
+
 <div align="center">
   <a href="https://youtu.be/3A-MAoaB8aA">
-    <img src="https://img.youtube.com/vi/3A-MAoaB8aA/maxresdefault.jpg" alt="ResumeWise AI Demo Video" width="800" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+    <img src="https://img.youtube.com/vi/3A-MAoaB8aA/maxresdefault.jpg" alt="ResumeWise AI Demo" width="100%" style="border-radius:15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
     <br/>
-    <b>▶ Click to Watch Demo on YouTube</b>
+    <sub><b>▶ Click to play video on YouTube</b></sub>
   </a>
 </div>
 
