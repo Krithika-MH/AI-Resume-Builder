@@ -1,20 +1,24 @@
 <div align="center">
 
-  <tr style="border: none;">
-    <td width="180" style="border: none; padding-right: 30px;">
-      <img src="frontend/static/images/ResumeWise - logo.png" alt="ResumeWise Logo" width="160" />
+<table style="border: 1px solid white !important; border-collapse: collapse; border-spacing: 0; margin-left: auto; margin-right: auto;">
+  <tr style="border: none !important;">
+    <td valign="middle" style="border: none !important; padding: 20px;">
+      <img src="frontend/static/images/ResumeWise - logo.png" width="160" alt="ResumeWise Logo" />
     </td>
-    <td style="border: none; text-align: left;">
-      <h1 style="border: none; margin-bottom: 0;">ResumeWise AI</h1>
-      <p style="font-size: 1.3em; margin: 0;"><b>✦ AI-Powered · Industry Grade ATS Scoring</b></p>
-      <p style="color: #555; margin-top: 5px;"><i>Smarter Resumes. Stronger Careers.</i></p>
-      <br />
-      <a href="https://ai-resume-builder-mo1b.onrender.com/" target="_blank">
-        <img src="https://img.shields.io/badge/✨_Build_My_Resume_Live-6366f1?style=for-the-badge" alt="Build Resume" />
-      </a>
+    <td valign="middle" style="border: none !important; text-align: left; padding: 20px;">
+      <h1 style="border: none !important; margin: 0; line-height: 1.2; font-size: 2.8em;">ResumeWise AI</h1>
+      <p style="margin: 4px 0; font-size: 1.2em; color: #2d3748;">
+        <b>✦ AI-Powered · Industry Grade ATS Scoring</b>
+      </p>
+      <p style="margin: 0; color: #718096; font-style: italic;">Smarter Resumes. Stronger Careers.</p>
+      <div style="margin-top: 16px;">
+        <a href="https://ai-resume-builder-mo1b.onrender.com/" target="_blank">
+          <img src="https://img.shields.io/badge/✨_BUILD_MY_RESUME_LIVE-6366f1?style=for-the-badge" alt="Build Resume">
+        </a>
+      </div>
     </td>
   </tr>
-
+</table>
 
 <br />
 
@@ -26,8 +30,6 @@
 
 ---
 </div>
-
----
 
 ## 📺 Project Demo
 Experience the full workflow of **ResumeWise AI**, from AI content generation to live editing and FAANG-grade ATS scoring.
