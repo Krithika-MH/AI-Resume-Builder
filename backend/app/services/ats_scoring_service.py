@@ -322,8 +322,8 @@ REQUIREMENTS:
 - Suggest specific keywords, verbs, or sections to add
 - Reference actual gaps you see (e.g. "Your skills list has Python but no mention of system design")
 - Each suggestion should be 1-2 sentences max
-- Format: Return a JSON array of strings: ["suggestion 1", "suggestion 2", ...]
-- No markdown, no preamble, just the JSON array
+- Format: Return a strictly valid JSON array of strings: ["suggestion 1", "suggestion 2"]
+- VERY IMPORTANT: Return ONLY JSON. Do not include raw newlines or unescaped quotes inside the strings.
 """
 
         try:
@@ -337,14 +337,27 @@ REQUIREMENTS:
                 contents=prompt,
                 config=config,
             )
+            
             import json, re as re2
             raw = resp.text.strip()
-            raw = re2.sub(r'^```json\s*', '', raw)
-            raw = re2.sub(r'```\s*$', '', raw).strip()
-            data = json.loads(raw)
+            
+            # Clean up any potential markdown blocks
+            raw = re2.sub(r'^```[a-zA-Z]*\s*', '', raw)
+            raw = re2.sub(r'\s*```$', '', raw).strip()
+            
+            # Force extract just the JSON array to avoid conversational text breaking the parser
+            match = re2.search(r'\[.*\]', raw, re2.DOTALL)
+            if match:
+                raw = match.group(0)
+                
+            # strict=False allows raw newlines inside strings without throwing Unterminated string errors
+            data = json.loads(raw, strict=False)
+            
             if isinstance(data, list):
                 return [str(s) for s in data[:8]]
+                
             return self._fallback_suggestions(scores)
+            
         except Exception as e:
             print(f"⚠️ AI suggestions failed: {e}")
             return self._fallback_suggestions(scores)
