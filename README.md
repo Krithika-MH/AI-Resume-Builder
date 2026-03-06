@@ -1,26 +1,29 @@
 <div align="center">
+  <br />
+  <div style="display: flex; align-items: center; justify-content: center; gap: 40px; text-align: left;">
+    <img src="frontend/static/images/ResumeWise - logo.png" alt="ResumeWise Logo" width="160" />
+    <div>
+      <h1 style="margin: 0; border: none;">ResumeWise AI</h1>
+      <p style="font-size: 1.2rem; margin: 5px 0;">✦ AI-Powered · Industry Grade ATS Scoring</p>
+      <p style="color: #666; margin: 5px 0;">Smarter Resumes. Stronger Careers.</p>
+      <div style="margin-top: 15px;">
+        <a href="https://ai-resume-builder-mo1b.onrender.com/" target="_blank">
+          <img src="https://img.shields.io/badge/✨_Build_My_Resume_Live-6366f1?style=for-the-badge" alt="Build Resume" />
+        </a>
+      </div>
+    </div>
+  </div>
+  <br />
 
-<table border="0" style="border: none; border-collapse: collapse;">
-  <tr style="border: none;">
-    <td style="border: none; padding: 20px;">
-      <img src="frontend/static/images/ResumeWise - logo.png" alt="ResumeWise AI Logo" width="160"/>
-    </td>
-    <td style="border: none; text-align: left;">
-      <h1>ResumeWise AI</h1>
-      <p><strong>✦ AI-Powered · Industry Grade ATS Scoring</strong><br/>
-      <em>Smarter Resumes. Stronger Careers.</em></p>
-      <p>Build ATS-optimized resumes using real Gemini AI — your facts, polished to perfection.<br/>Score against FAANG standards in seconds.</p>
-      <a href="https://ai-resume-builder-mo1b.onrender.com/"><strong>✨ Build My Resume Live</strong></a>
-    </td>
-  </tr>
-</table>
+---
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI"/>
-  <img src="https://img.shields.io/badge/Google_Gemini-8E75B2?style=flat&logo=googlegemini&logoColor=white" alt="Gemini"/>
-</p>
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=flat-square&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
+[![Tailwind](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Render](https://img.shields.io/badge/Deployed_on-Render-430098?style=flat-square&logo=render&logoColor=white)](https://ai-resume-builder-mo1b.onrender.com/)
 
+</div>
 </div>
 
 ---
